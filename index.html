@@ -2,32 +2,51 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מזהה אקורדים יציב - Harmonic Filter</title>
+    <title>זיהוי אקורדים מקצועי</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
         .card { background: #1e1e1e; border-radius: 24px; padding: 30px; max-width: 550px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
         
-        #chord-result { font-size: 6em; color: #ffeb3b; margin: 15px 0; font-weight: 900; min-height: 1.2em; text-shadow: 0 0 30px rgba(255,235,59,0.3); letter-spacing: -2px; }
+        h1 { color: #007bff; margin-bottom: 25px; font-size: 2.2em; }
+
+        /* תיחום אזור בחירת הקובץ */
+        .file-upload-box {
+            border: 2px dashed #444;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            background: #252525;
+            transition: 0.3s;
+        }
+        .file-upload-box:hover { border-color: #007bff; background: #2a2a2a; }
+        input[type="file"] { color: #aaa; cursor: pointer; font-size: 14px; }
+
+        #chord-result { font-size: 6.5em; color: #ffeb3b; margin: 10px 0; font-weight: 900; min-height: 1.2em; text-shadow: 0 0 30px rgba(255,235,59,0.3); }
         
-        .controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; background: #252525; padding: 15px; border-radius: 15px; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; background: #252525; padding: 15px; border-radius: 15px; border: 1px solid #333; }
         .t-btn { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 22px; transition: 0.2s; }
         .t-btn:hover { background: #0056b3; transform: scale(1.1); }
         
-        .visualizer { display: flex; justify-content: center; gap: 5px; height: 50px; align-items: flex-end; margin-bottom: 20px; opacity: 0.4; }
-        .bar { width: 12px; background: #4CAF50; border-radius: 2px; }
+        .visualizer { display: flex; justify-content: center; gap: 5px; height: 40px; align-items: flex-end; margin-bottom: 20px; opacity: 0.3; }
+        .bar { width: 10px; background: #4CAF50; border-radius: 2px; }
 
-        #start-btn { background: #ff0055; color: white; border: none; padding: 18px 60px; font-size: 24px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 10px 20px rgba(255,0,85,0.3); }
-        #start-btn:disabled { background: #333; cursor: not-allowed; box-shadow: none; }
-        input[type="file"] { margin-bottom: 20px; color: #888; }
-        audio { width: 100%; margin-top: 20px; border-radius: 10px; }
+        #start-btn { background: #ff0055; color: white; border: none; padding: 18px 60px; font-size: 24px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 10px 20px rgba(255,0,85,0.3); transition: 0.3s; }
+        #start-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(255,0,85,0.4); }
+        #start-btn:disabled { background: #333; cursor: not-allowed; opacity: 0.6; }
+        
+        audio { width: 100%; margin-top: 25px; border-radius: 12px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>מזהה אקורדים יציב</h1>
-    <input type="file" id="audio-file" accept="audio/*">
+    <h1>זיהוי אקורדים מקצועי</h1>
+    
+    <div class="file-upload-box">
+        <p style="margin-top:0; color:#bbb;">בחר קובץ שמע לניתוח (MP3/WAV)</p>
+        <input type="file" id="audio-file" accept="audio/*">
+    </div>
     
     <div class="visualizer" id="visualizer"></div>
     
@@ -35,11 +54,11 @@
 
     <div class="controls">
         <button class="t-btn" onclick="changeTranspose(-1)">-</button>
-        <span id="t-display" style="font-weight: bold; font-size: 1.2em;">Transpose: 0</span>
+        <span id="t-display" style="font-weight: bold; font-size: 1.2em; min-width: 120px;">סולם: 0</span>
         <button class="t-btn" onclick="changeTranspose(1)">+</button>
     </div>
     
-    <button id="start-btn" disabled>התחל ניתוח חכם</button>
+    <button id="start-btn" disabled>התחל ניתוח</button>
     <audio id="audio-player" controls></audio>
 </div>
 
@@ -47,94 +66,11 @@
     let audioContext, source, analyzer;
     let transpose = 0;
     let chordHistory = [];
-    const HISTORY_SIZE = 25; // גודל הזיכרון להחלקת התוצאה
+    const HISTORY_SIZE = 25; 
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // יצירת הויזואליזציה
+    // יצירת הויזואליזציה (12 תווים)
     for(let i=0; i<12; i++) {
         const bar = document.createElement('div');
         bar.id = `bar-${i}`; bar.className = 'bar';
-        document.getElementById('visualizer').appendChild(bar);
-    }
-
-    const CHORD_DATA = [
-        { name: '', pattern: [0, 4, 7] },
-        { name: 'm', pattern: [0, 3, 7] },
-        { name: '7', pattern: [0, 4, 7, 10] },
-        { name: 'maj7', pattern: [0, 4, 7, 11] },
-        { name: 'm7', pattern: [0, 3, 7, 10] }
-    ];
-
-    function changeTranspose(val) {
-        transpose = (transpose + val + 12) % 12;
-        let displayVal = transpose > 6 ? transpose - 12 : transpose;
-        document.getElementById('t-display').innerText = "Transpose: " + (displayVal >= 0 ? "+" : "") + displayVal;
-    }
-
-    document.getElementById('audio-file').onchange = (e) => {
-        if (e.target.files[0]) {
-            document.getElementById('audio-player').src = URL.createObjectURL(e.target.files[0]);
-            document.getElementById('start-btn').disabled = false;
-        }
-    };
-
-    document.getElementById('start-btn').onclick = async () => {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        await audioContext.resume();
-        source = audioContext.createMediaElementSource(document.getElementById('audio-player'));
-        source.connect(audioContext.destination);
-
-        analyzer = Meyda.createMeydaAnalyzer({
-            audioContext: audioContext,
-            source: source,
-            bufferSize: 2048, // הגדלת הבאפר לדיוק גבוה יותר בתדרים נמוכים
-            featureExtractors: ['chroma'],
-            callback: features => {
-                const chroma = features.chroma;
-                
-                // 1. ניקוי רעשים - רק צלילים דומיננטיים נשארים
-                const threshold = Math.max(...chroma) * 0.55;
-                const cleanChroma = chroma.map(v => v > threshold ? v : 0);
-
-                chroma.forEach((val, i) => {
-                    document.getElementById(`bar-${i}`).style.height = (val * 100) + '%';
-                });
-
-                let bestChord = "---";
-                let maxScore = 0;
-
-                // 2. חישוב אקורד נוכחי
-                for (let root = 0; root < 12; root++) {
-                    for (let type of CHORD_DATA) {
-                        let score = type.pattern.reduce((sum, interval) => sum + cleanChroma[(root + interval) % 12], 0);
-                        if (score > maxScore) {
-                            maxScore = score;
-                            let transposedRoot = (root + transpose + 12) % 12;
-                            bestChord = NOTES[transposedRoot] + type.name;
-                        }
-                    }
-                }
-
-                // 3. מנגנון החלקה חכם (Voting)
-                if (bestChord !== "---") {
-                    chordHistory.push(bestChord);
-                    if (chordHistory.length > HISTORY_SIZE) chordHistory.shift();
-
-                    // מציאת האקורד הכי שכיח בזיכרון
-                    const counts = {};
-                    chordHistory.forEach(c => counts[c] = (counts[c] || 0) + 1);
-                    const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
-                    
-                    document.getElementById('chord-result').innerText = winner;
-                }
-            }
-        });
-
-        analyzer.start();
-        document.getElementById('audio-player').play();
-        document.getElementById('start-btn').innerText = "מנתח חכם...";
-        document.getElementById('start-btn').disabled = true;
-    };
-</script>
-</body>
-</html>
+        document.getElementById('visual

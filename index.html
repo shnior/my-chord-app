@@ -3,39 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAESTRO ULTIMATE v29.0</title>
+<title>MAESTRO v30 PRO</title>
 
 <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
 
 <style>
-:root {
-  --bg:#05070a; --panel:#0d1117; --accent:#00f2ff;
-  --gold:#ffcc00; --text:#e6edf3;
-}
 body {
-  margin:0; display:grid;
-  grid-template-columns:320px 1fr;
-  height:100vh; background:var(--bg); color:var(--text);
+  margin:0;
+  display:grid;
+  grid-template-columns:300px 1fr;
+  height:100vh;
   font-family:sans-serif;
+  background:#0b0f14;
+  color:#fff;
 }
 aside {
-  background:var(--panel);
   padding:20px;
+  background:#111;
   display:flex;
   flex-direction:column;
-  gap:12px;
+  gap:10px;
 }
 button {
-  padding:14px;
+  padding:12px;
   border:none;
-  border-radius:12px;
+  border-radius:10px;
   cursor:pointer;
-  font-weight:bold;
 }
-.btn-main {
-  background:linear-gradient(45deg,#ff00ff,#00ffaa,#ffff00);
-  color:#000;
+canvas {
+  width:100%;
+  height:100%;
 }
 </style>
 </head>
@@ -43,18 +40,15 @@ button {
 <body>
 
 <aside>
-  <h2>MAESTRO ULTIMATE</h2>
+  <h2>MAESTRO v30 PRO</h2>
 
-  <button class="btn-main" onclick="loadAudio()">טען קובץ</button>
-  <input type="file" id="audioInput" hidden accept="audio/*">
+  <button onclick="loadFile()">🎧 טען קובץ</button>
+  <input type="file" id="file" hidden accept="audio/*">
 
-  <button onclick="voiceClone()">🎙️ Voice Clone</button>
-  <button onclick="cloudSync()">☁️ Cloud Sync</button>
-  <button onclick="startStudio()">🎥 8K Studio</button>
-  <button onclick="exportAll()">💾 Export</button>
+  <button onclick="togglePlay()">▶ נגן / עצור</button>
+  <button onclick="startVoice()">🎙️ פקודות קוליות</button>
 
   <div>BPM: <span id="bpm">---</span></div>
-  <div>Key: <span id="key">---</span></div>
 </aside>
 
 <main>
@@ -63,102 +57,126 @@ button {
 
 <script>
 const state = {
-  audioCtx: null,
-  audioBuffer: null,
+  ctx: null,
+  buffer: null,
   source: null,
   isPlaying: false,
-  cloned: false
+  startTime: 0,
+  offset: 0
 };
 
-// ================= AUDIO =================
-function loadAudio() {
-  document.getElementById("audioInput").click();
+// ========= LOAD =========
+function loadFile() {
+  document.getElementById("file").click();
 }
 
-document.getElementById("audioInput").addEventListener("change", async e => {
-  const file = e.target.files[0];
-  if (!file) return;
+file.onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
 
-  try {
-    const arrayBuffer = await file.arrayBuffer();
-    state.audioCtx = new AudioContext();
-    state.audioBuffer = await state.audioCtx.decodeAudioData(arrayBuffer);
+  state.ctx = new AudioContext();
+  const data = await f.arrayBuffer();
+  state.buffer = await state.ctx.decodeAudioData(data);
 
-    analyzeAudio(state.audioBuffer);
-    alert("✅ קובץ נטען בהצלחה");
-  } catch (err) {
-    console.error(err);
-    alert("שגיאה בטעינת הקובץ");
-  }
-});
-
-// ================= ANALYSIS =================
-function analyzeAudio(buffer) {
-  try {
-    const signal = buffer.getChannelData(0);
-
-    const features = Meyda.extract(["rms","spectralCentroid"], signal);
-
-    document.getElementById("bpm").textContent =
-      Math.round(features.rms * 100);
-
-    document.getElementById("key").textContent =
-      features.spectralCentroid.toFixed(0);
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ================= VOICE =================
-function voiceClone() {
-  if (state.cloned) return alert("כבר הופעל");
-
-  try {
-    const msg = new SpeechSynthesisUtterance("שלום, אני הקול שלך");
-    msg.lang = "he-IL";
-    speechSynthesis.speak(msg);
-
-    state.cloned = true;
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-// ================= CLOUD =================
-function cloudSync() {
-  console.log("Syncing...");
-  alert("☁️ Sync הופעל (דמו)");
-}
-
-// ================= STUDIO =================
-async function startStudio() {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video:true,
-      audio:true
-    });
-
-    const video = document.createElement("video");
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.style.width = "100%";
-
-    document.querySelector("main").appendChild(video);
-  } catch (err) {
-    console.error(err);
-    alert("אין גישה למצלמה");
-  }
-}
-
-// ================= EXPORT =================
-function exportAll() {
-  alert("💾 Export בוצע (דמו)");
-}
-
-// ================= INIT =================
-window.onload = () => {
-  console.log("MAESTRO READY");
+  drawWave(state.buffer);
+  detectBPM(state.buffer);
 };
+
+// ========= PLAY =========
+function createSource() {
+  const src = state.ctx.createBufferSource();
+  src.buffer = state.buffer;
+  src.connect(state.ctx.destination);
+  return src;
+}
+
+function togglePlay() {
+  if (!state.buffer) return;
+
+  if (!state.isPlaying) {
+    state.source = createSource();
+    state.source.start(0, state.offset);
+    state.startTime = state.ctx.currentTime;
+    state.isPlaying = true;
+
+    state.source.onended = () => {
+      state.isPlaying = false;
+      state.offset = 0;
+    };
+  } else {
+    state.source.stop();
+    state.offset += state.ctx.currentTime - state.startTime;
+    state.isPlaying = false;
+  }
+}
+
+// ========= WAVE =========
+function drawWave(buffer) {
+  const canvas = document.getElementById("wave");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+
+  const data = buffer.getChannelData(0);
+  const step = Math.ceil(data.length / canvas.width);
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  for (let i=0;i<canvas.width;i++){
+    let min=1,max=-1;
+    for (let j=0;j<step;j++){
+      const val = data[(i*step)+j];
+      if(val<min)min=val;
+      if(val>max)max=val;
+    }
+    ctx.fillRect(i,(1+min)*canvas.height/2,1,(max-min)*canvas.height/2);
+  }
+}
+
+// ========= BPM =========
+function detectBPM(buffer) {
+  const data = buffer.getChannelData(0);
+
+  let peaks = [];
+  for (let i=0;i<data.length;i+=10000){
+    if (data[i] > 0.9) peaks.push(i);
+  }
+
+  let intervals = [];
+  for (let i=1;i<peaks.length;i++){
+    intervals.push(peaks[i]-peaks[i-1]);
+  }
+
+  let avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
+  let bpm = 60 / (avg / buffer.sampleRate);
+
+  document.getElementById("bpm").textContent = Math.round(bpm) || "---";
+}
+
+// ========= VOICE =========
+function startVoice() {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    alert("אין תמיכה בדפדפן");
+    return;
+  }
+
+  const rec = new SpeechRecognition();
+  rec.lang = "he-IL";
+
+  rec.onresult = e => {
+    const text = e.results[0][0].transcript;
+    console.log("🎙️", text);
+
+    if (text.includes("נגן")) togglePlay();
+    if (text.includes("עצור")) togglePlay();
+  };
+
+  rec.start();
+}
 </script>
 
 </body>

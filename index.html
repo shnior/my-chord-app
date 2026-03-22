@@ -2,195 +2,135 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChordAI Pro - Keyboard Edition</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>ChordAI - Keyboard Edition</title>
     <style>
-        :root{--bg:#0a0a0f;--surface:#13131a;--surface2:#1c1c27;--border:rgba(255,255,255,0.08);--accent:#c8ff4e;--accent2:#7c5cfc;--text:#f0f0f8;--muted:rgba(240,240,248,0.5);}
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;min-height:100vh;direction:rtl;}
-        .main{max-width:1000px;margin:0 auto;padding:2rem;}
+        :root { --bg: #0f172a; --panel: #1e293b; --accent: #34d399; --text: #f8fafc; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; margin: 0; padding: 20px; text-align: center; }
         
-        /* Search & Tabs */
-        .search-input{width:100%; background:var(--surface); border:1px solid var(--border); color:#white; padding:15px; border-radius:10px; margin-bottom:10px; font-size:1.1rem;}
-        .btn{background:var(--accent); color:#000; border:none; padding:12px 25px; border-radius:8px; font-weight:bold; cursor:pointer; transition:0.2s;}
-        .btn-play{background:var(--accent2); color:white; margin-top:10px;}
-        
-        /* Chords Display */
-        .sections{display:flex; flex-direction:column; gap:20px; margin-top:30px;}
-        .section-block{background:var(--surface); border-radius:15px; padding:15px; border:1px solid var(--border);}
-        .chords-grid{display:flex; flex-wrap:wrap; gap:10px; margin-top:10px; direction:ltr;}
-        .chord-card{background:var(--surface2); border:1px solid var(--border); padding:15px; border-radius:10px; min-width:80px; text-align:center; cursor:pointer; position:relative; transition:0.2s;}
-        .chord-card.active{border-color:var(--accent); background:rgba(200,255,78,0.15); transform:scale(1.05); box-shadow:0 0 15px var(--accent);}
-        .chord-name{font-size:1.4rem; font-weight:800; font-family:'Space Mono';}
-        
-        /* Piano Diagram */
-        .piano-container{position:fixed; bottom:0; left:0; width:100%; background:var(--surface2); border-top:3px solid var(--accent); padding:20px; display:none; flex-direction:column; align-items:center; z-index:1000;}
-        .piano{display:flex; position:relative; background:#000; padding:2px; border-radius:4px;}
-        .key{width:35px; height:120px; background:white; border:1px solid #ccc; border-radius:0 0 4px 4px; position:relative;}
-        .key.black{width:22px; height:75px; background:#222; margin-left:-11px; margin-right:-11px; z-index:2; border:none;}
-        .key.pressed{background:var(--accent) !important;}
-        .key.black.pressed{background:var(--accent2) !important;}
-        
-        .status-bar{margin-top:10px; color:var(--accent); font-family:'Space Mono'; font-weight:bold;}
-        .close-piano{position:absolute; top:10px; right:20px; cursor:pointer; font-size:1.5rem;}
+        .container { max-width: 900px; margin: 0 auto; }
+        .search-box { background: var(--panel); padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        input { padding: 12px; border-radius: 8px; border: none; width: 60%; font-size: 16px; }
+        button { padding: 12px 20px; border-radius: 8px; border: none; background: var(--accent); color: #000; font-weight: bold; cursor: pointer; margin: 5px; }
+
+        /* Piano Display */
+        .piano-view { background: #000; padding: 20px; border-radius: 10px; margin: 20px 0; display: inline-block; position: relative; }
+        .piano { display: flex; border-radius: 5px; overflow: hidden; }
+        .key { width: 40px; height: 150px; background: white; border: 1px solid #333; box-sizing: border-box; position: relative; }
+        .key.black { width: 26px; height: 90px; background: #333; margin-left: -13px; margin-right: -13px; z-index: 2; border: none; }
+        .key.active { background: var(--accent) !important; box-shadow: inset 0 -10px 10px rgba(0,0,0,0.2); }
+
+        /* Live Chords */
+        .chords-display { display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .chord-unit { background: var(--panel); padding: 15px; border-radius: 10px; min-width: 80px; border: 2px solid transparent; transition: 0.3s; }
+        .chord-unit.playing { border-color: var(--accent); transform: scale(1.1); box-shadow: 0 0 20px rgba(52, 211, 153, 0.4); }
+        .chord-name { font-size: 24px; font-weight: bold; display: block; }
     </style>
 </head>
 <body>
 
-<div class="main">
-    <h1 style="margin-bottom:20px;">ChordAI <span style="color:var(--accent)">Keyboard</span></h1>
-    
-    <input type="text" id="songInput" class="search-input" placeholder="הקלד שם שיר (למשל: Let It Be)">
-    <button class="btn" onclick="analyze()">נתח אקורדים</button>
-    <button id="playBtn" class="btn btn-play" style="display:none;" onclick="toggleLivePlay()">נגן בלייב (Sync) ▶</button>
+<div class="container">
+    <div class="search-box">
+        <h2>ניתוח אקורדים לקלידים (לייב)</h2>
+        <input type="text" id="songInput" placeholder="שם שיר (למשל: Let It Be)">
+        <button onclick="startAnalysis()">נתח שיר</button>
+        <button id="playBtn" style="display:none; background:#818cf8;" onclick="togglePlay()">נגן בלייב ▶</button>
+    </div>
 
-    <div id="resultArea" class="sections"></div>
-</div>
-
-<div class="piano-container" id="pianoContainer">
-    <span class="close-piano" onclick="closePiano()">×</span>
-    <div id="activeChordName" style="font-size:1.8rem; margin-bottom:10px; font-weight:800;"></div>
-    <div class="piano" id="pianoWrapper">
+    <div id="pianoContainer" style="display:none;">
+        <h3 id="currentChordTitle">ממתין...</h3>
+        <div class="piano-view">
+            <div class="piano" id="pianoKeys"></div>
         </div>
-    <div class="status-bar" id="liveStatus"></div>
+    </div>
+
+    <div class="chords-display" id="chordsList"></div>
 </div>
 
 <script>
-const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-// מיפוי תווי אקורדים בסיסיים לקלידים (חצי טונים מהשורש)
-const CHORD_MAPS = {
-    '': [0, 4, 7], 'm': [0, 3, 7], '7': [0, 4, 7, 10], 'maj7': [0, 4, 7, 11], 
-    'm7': [0, 3, 7, 10], 'sus4': [0, 5, 7], 'add9': [0, 4, 7, 14]
-};
-
-let currentSong = null;
-let isPlaying = false;
-let playIndex = 0;
-let playInterval = null;
-
-function createPiano() {
-    const wrapper = document.getElementById('pianoWrapper');
-    wrapper.innerHTML = '';
-    // נייצר 2 אוקטבות (24 קלידים)
-    for (let i = 0; i < 24; i++) {
-        const noteName = NOTES[i % 12];
-        const isBlack = noteName.includes('#');
-        const key = document.createElement('div');
-        key.className = `key ${isBlack ? 'black' : 'white'}`;
-        key.dataset.noteIdx = i;
-        wrapper.appendChild(key);
-    }
-}
-
-async function analyze() {
-    const query = document.getElementById('songInput').value;
-    if(!query) return;
-    
-    document.getElementById('resultArea').innerHTML = "מנתח מבנה הרמוני...";
-    await new Promise(r => setTimeout(r, 1000));
-
-    // נתונים דמו (במציאות יבוא מה-API)
-    currentSong = {
-        title: query,
-        bpm: 80,
-        chords: [
-            {name: "C", beats: 4}, {name: "G", beats: 4}, {name: "Am", beats: 4}, {name: "F", beats: 4},
-            {name: "C", beats: 4}, {name: "G", beats: 4}, {name: "F", beats: 2}, {name: "C", beats: 2}
-        ]
+    const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const CHORD_DATA = {
+        '': [0, 4, 7], 'm': [0, 3, 7], '7': [0, 4, 7, 10], 'maj7': [0, 4, 7, 11], 'm7': [0, 3, 7, 10]
     };
 
-    renderChords();
-    document.getElementById('playBtn').style.display = 'inline-block';
-}
+    let song = null;
+    let playing = false;
+    let currentIndex = 0;
+    let timer = null;
 
-function renderChords() {
-    const area = document.getElementById('resultArea');
-    area.innerHTML = `
-        <div class="section-block">
-            <h3>מבנה השיר (BPM: ${currentSong.bpm})</h3>
-            <div class="chords-grid" id="mainGrid">
-                ${currentSong.chords.map((c, i) => `
-                    <div class="chord-card" id="chord-${i}" onclick="showOnPiano('${c.name}', ${i})">
-                        <span class="chord-beats">${c.beats}</span>
-                        <div class="chord-name">${c.name}</div>
-                    </div>
-                `).join('')}
-            </div>
-        </div>
-    `;
-}
-
-function showOnPiano(chordName, index = -1) {
-    document.getElementById('pianoContainer').style.display = 'flex';
-    document.getElementById('activeChordName').textContent = chordName;
-    
-    // ניקוי קלידים
-    document.querySelectorAll('.key').forEach(k => k.classList.remove('pressed'));
-    
-    // חישוב תווים
-    const root = chordName.match(/^[A-G][#b]?/)[0];
-    const type = chordName.replace(root, '');
-    let rootIdx = NOTES.indexOf(root.replace('b', '')); 
-    if(root.includes('b')) rootIdx = (NOTES.indexOf(root[0]) - 1 + 12) % 12;
-
-    const intervals = CHORD_MAPS[type] || CHORD_MAPS[''];
-    intervals.forEach(interval => {
-        const noteToPress = rootIdx + interval;
-        const key = document.querySelector(`.key[data-note-idx="${noteToPress}"]`);
-        if(key) key.classList.add('pressed');
-    });
-
-    // הדגשה בגריד
-    document.querySelectorAll('.chord-card').forEach(c => c.classList.remove('active'));
-    if(index !== -1) document.getElementById(`chord-${index}`).classList.add('active');
-}
-
-function toggleLivePlay() {
-    if(isPlaying) {
-        clearInterval(playInterval);
-        isPlaying = false;
-        document.getElementById('playBtn').textContent = "נגן בלייב (Sync) ▶";
-        document.getElementById('liveStatus').textContent = "";
-    } else {
-        isPlaying = true;
-        playIndex = 0;
-        document.getElementById('playBtn').textContent = "עצור נגינה ⏹";
-        startPlayback();
-    }
-}
-
-function startPlayback() {
-    const beatDuration = (60 / currentSong.bpm) * 1000;
-    
-    const playNext = () => {
-        if(!isPlaying) return;
-        if(playIndex >= currentSong.chords.length) {
-            playIndex = 0; // לופ
+    // יצירת הקלידים
+    function initPiano() {
+        const piano = document.getElementById('pianoKeys');
+        piano.innerHTML = '';
+        for (let i = 0; i < 24; i++) {
+            const isBlack = NOTES[i % 12].includes('#');
+            const key = document.createElement('div');
+            key.className = `key ${isBlack ? 'black' : 'white'}`;
+            key.id = `key-${i}`;
+            piano.appendChild(key);
         }
-        
-        const chord = currentSong.chords[playIndex];
-        showOnPiano(chord.name, playIndex);
-        
-        const duration = chord.beats * beatDuration;
-        document.getElementById('liveStatus').textContent = `מנגן: ${chord.name} (${chord.beats} פעימות)`;
-        
-        playIndex++;
-        playInterval = setTimeout(playNext, duration);
-    };
-    
-    playNext();
-}
+    }
 
-function closePiano() {
-    document.getElementById('pianoContainer').style.display = 'none';
-    isPlaying = false;
-    clearInterval(playInterval);
-}
+    function startAnalysis() {
+        const name = document.getElementById('songInput').value || "שיר חדש";
+        // נתונים מדומים לביצועים (במקום API שחוסם)
+        song = {
+            bpm: 85,
+            chords: [
+                {n: "C", b: 4}, {n: "G", b: 4}, {n: "Am", b: 4}, {n: "F", b: 4},
+                {n: "C", b: 4}, {n: "G", b: 4}, {n: "F", b: 2}, {n: "C", b: 2}
+            ]
+        };
+        renderChords();
+        document.getElementById('pianoContainer').style.display = 'block';
+        document.getElementById('playBtn').style.display = 'inline-block';
+        showChord(song.chords[0].n, 0);
+    }
 
-// אתחול
-createPiano();
+    function renderChords() {
+        const list = document.getElementById('chordsList');
+        list.innerHTML = song.chords.map((c, i) => `
+            <div class="chord-unit" id="unit-${i}" onclick="showChord('${c.n}', ${i})">
+                <span class="chord-name">${c.n}</span>
+                <small>${c.b} פעימות</small>
+            </div>
+        `).join('');
+    }
 
+    function showChord(chordName, index) {
+        document.getElementById('currentChordTitle').innerText = "אקורד נוכחי: " + chordName;
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        document.querySelectorAll('.chord-unit').forEach(u => u.classList.remove('playing'));
+        document.getElementById(`unit-${index}`).classList.add('playing');
+
+        const rootStr = chordName.match(/^[A-G][#b]?/)[0];
+        const type = chordName.replace(rootStr, '');
+        let rootIdx = NOTES.indexOf(rootStr.replace('b', ''));
+
+        (CHORD_DATA[type] || CHORD_DATA['']).forEach(interval => {
+            const key = document.getElementById(`key-${rootIdx + interval}`);
+            if (key) key.classList.add('active');
+        });
+    }
+
+    function togglePlay() {
+        playing = !playing;
+        document.getElementById('playBtn').innerText = playing ? "עצור ⏹" : "נגן בלייב ▶";
+        if (playing) playNext();
+        else clearTimeout(timer);
+    }
+
+    function playNext() {
+        if (!playing) return;
+        showChord(song.chords[currentIndex].n, currentIndex);
+        
+        const beatMs = (60 / song.bpm) * 1000;
+        const duration = song.chords[currentIndex].b * beatMs;
+
+        currentIndex = (currentIndex + 1) % song.chords.length;
+        timer = setTimeout(playNext, duration);
+    }
+
+    initPiano();
 </script>
 </body>
 </html>

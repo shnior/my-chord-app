@@ -1,235 +1,213 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAESTRO PRO AI</title>
-<script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAESTRO PRO - CHORDIFY MODE</title>
+    <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
+    <style>
+        :root {
+            --primary: #ffcc00;
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --grid-border: #333;
+        }
+        body { margin: 0; background: var(--bg); color: white; font-family: 'Assistant', sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        
+        /* Top Navigation */
+        header { background: var(--surface); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--grid-border); }
+        .logo { color: var(--primary); font-weight: 900; font-size: 24px; letter-spacing: -1px; }
 
-<style>
-body{margin:0;background:#0b0f14;color:#fff;font-family:sans-serif;display:flex;height:100vh}
-aside{width:300px;background:#121821;padding:15px;display:flex;flex-direction:column;gap:10px}
-main{flex:1;display:flex;flex-direction:column}
+        /* Chord Grid - THE CHORDIFY LOOK */
+        #chord-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+            gap: 10px; 
+            padding: 20px; 
+            overflow-y: auto; 
+            flex-grow: 1;
+            align-content: flex-start;
+        }
+        .chord-box { 
+            background: var(--surface); 
+            aspect-ratio: 1/1; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            border: 2px solid var(--grid-border);
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+        .chord-box.active { 
+            border-color: var(--primary); 
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.3);
+            transform: scale(1.05);
+            background: #2a2a2a;
+        }
+        .chord-name { font-size: 28px; font-weight: bold; }
+        .chord-time { font-size: 12px; color: #888; margin-top: 5px; }
 
-#chord{font-size:120px;text-align:center;color:#ffcc00}
-.timeline{display:flex;gap:5px;overflow-x:auto;padding:10px}
-.tag{border:1px solid cyan;padding:5px}
+        /* Control Bar */
+        .controls { background: var(--surface); padding: 20px; display: flex; align-items: center; gap: 20px; border-top: 2px solid var(--grid-border); }
+        .play-btn { width: 50px; height: 50px; border-radius: 50%; border: none; background: var(--primary); cursor: pointer; font-size: 20px; }
+        .progress-container { flex-grow: 1; height: 6px; background: #333; border-radius: 3px; position: relative; cursor: pointer; }
+        #progress-bar { height: 100%; background: var(--primary); width: 0%; border-radius: 3px; }
 
-.piano{display:flex;justify-content:center}
-.key{width:40px;height:120px;background:white;border:1px solid #000}
-.key.active{background:red}
-</style>
+        /* Hidden inputs */
+        input[type="file"] { display: none; }
+    </style>
 </head>
-
 <body>
 
-<aside>
-<button id="loadBtn">טען שיר</button>
-<input type="file" id="file" hidden>
+<header>
+    <div class="logo">MAESTRO PRO <span style="color:white; font-size:14px; font-weight:300;">AI CHORDIFY</span></div>
+    <button onclick="document.getElementById('file').click()" style="background:none; border:1px solid #555; color:white; padding:8px 15px; border-radius:20px; cursor:pointer;">📂 טען שיר</button>
+    <input type="file" id="file" accept="audio/*">
+</header>
 
-<div>BPM: <span id="bpm">---</span></div>
-<div>KEY: <span id="key">---</span></div>
+<div id="chord-grid">
+    </div>
 
-<button id="aiBtn">AI BOOST</button>
-</aside>
-
-<main>
-
-<div id="chord">--</div>
-
-<div style="text-align:center">
-<button id="playBtn">▶</button>
+<div class="controls">
+    <button class="play-btn" id="playBtn">▶</button>
+    <div class="progress-container" id="progressContainer">
+        <div id="progress-bar"></div>
+    </div>
+    <div id="currentTime" style="width: 50px; font-family: monospace;">0:00</div>
 </div>
 
-<div class="timeline" id="timeline"></div>
-<div class="piano" id="piano"></div>
-
-</main>
-
 <script>
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const templates = [
+        { name: "", i: [0, 4, 7] },         // Major
+        { name: "m", i: [0, 3, 7] },        // Minor
+        { name: "7", i: [0, 4, 7, 10] },    // 7th
+        { name: "maj7", i: [0, 4, 7, 11] }, // Maj7
+        { name: "m7", i: [0, 3, 7, 10] }    // min7
+    ];
 
-const fileInput = document.getElementById("file");
-const loadBtn = document.getElementById("loadBtn");
-const playBtn = document.getElementById("playBtn");
-const timeline = document.getElementById("timeline");
+    let audio = new Audio();
+    let ctx, src, meyda;
+    let lastChord = "";
+    let smoothingBuffer = new Array(12).fill(0);
+    const alpha = 0.15; // פקטור החלקה (EMA)
 
-let audio = new Audio();
-let ctx, src, gain, meyda;
+    // UI Elements
+    const grid = document.getElementById('chord-grid');
+    const playBtn = document.getElementById('playBtn');
+    const progressBar = document.getElementById('progress-bar');
+    const currentTimeText = document.getElementById('currentTime');
 
-let chromaHist = [];
-let lastChord = "--";
-let stability = 0;
-let ai = false;
+    document.getElementById('file').onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            audio.src = URL.createObjectURL(file);
+            grid.innerHTML = ""; 
+            lastChord = "";
+        }
+    };
 
-const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+    playBtn.onclick = () => {
+        if (!ctx) initAudio();
+        audio.paused ? audio.play() : audio.pause();
+        playBtn.innerText = audio.paused ? "▶" : "⏸";
+    };
 
-const templates = [
-{name:"", i:[0,4,7]},
-{name:"m", i:[0,3,7]},
-{name:"7", i:[0,4,7,10]},
-{name:"maj7", i:[0,4,7,11]},
-{name:"m7", i:[0,3,7,10]}
-];
+    function initAudio() {
+        ctx = new AudioContext();
+        src = ctx.createMediaElementSource(audio);
+        src.connect(ctx.destination);
+        
+        meyda = Meyda.createMeydaAnalyzer({
+            audioContext: ctx,
+            source: src,
+            bufferSize: 8192,
+            featureExtractors: ["chroma", "energy"],
+            callback: analyze
+        });
+        meyda.start();
+    }
 
-loadBtn.onclick = () => fileInput.click();
+    function analyze(features) {
+        if (!features.chroma || features.energy < 0.5) return; // התעלמות משקט
 
-fileInput.onchange = e => {
-audio.src = URL.createObjectURL(e.target.files[0]);
-};
+        // 1. החלקת Chroma באמצעות EMA (Exponential Moving Average)
+        features.chroma.forEach((v, i) => {
+            smoothingBuffer[i] = (alpha * v) + ((1 - alpha) * smoothingBuffer[i]);
+        });
 
-playBtn.onclick = () => {
-if(!ctx) initAudio();
-audio.paused ? audio.play() : audio.pause();
-};
+        // 2. זיהוי אקורד עם עדיפות לבאס
+        let bestScore = -1;
+        let bestRoot = 0;
+        let bestType = templates[0];
 
-document.getElementById("aiBtn").onclick = () => ai = !ai;
+        for (let r = 0; r < 12; r++) {
+            templates.forEach(t => {
+                let score = 0;
+                // תוספת משקל לתו השורש (Root)
+                score += smoothingBuffer[r] * 1.5; 
+                
+                t.i.forEach(idx => {
+                    score += smoothingBuffer[(r + idx) % 12];
+                });
 
-function initAudio(){
-ctx = new AudioContext();
-src = ctx.createMediaElementSource(audio);
-gain = ctx.createGain();
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRoot = r;
+                    bestType = t;
+                }
+            });
+        }
 
-src.connect(gain).connect(ctx.destination);
+        const currentChord = notes[bestRoot] + bestType.name;
 
-meyda = Meyda.createMeydaAnalyzer({
-audioContext: ctx,
-source: src,
-bufferSize: 8192,
-featureExtractors: ["chroma"],
-callback: analyze
-});
+        // 3. מנגנון יצירת קוביות (Grid Logic)
+        // אנחנו יוצרים קובייה חדשה רק אם האקורד השתנה משמעותית או עבר זמן מסוים
+        if (currentChord !== lastChord && bestScore > 1.5) {
+            addChordToGrid(currentChord);
+            lastChord = currentChord;
+        }
+        
+        updateProgress();
+    }
 
-meyda.start();
-}
+    function addChordToGrid(name) {
+        // הסרת סימון מפעיל קודם
+        document.querySelectorAll('.chord-box').forEach(b => b.classList.remove('active'));
 
-function analyze(f){
+        const box = document.createElement('div');
+        box.className = 'chord-box active';
+        
+        const time = formatTime(audio.currentTime);
+        box.innerHTML = `
+            <div class="chord-name">${name}</div>
+            <div class="chord-time">${time}</div>
+        `;
+        
+        grid.appendChild(box);
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
-// ממוצע זמן
-chromaHist.push(f.chroma);
-if(chromaHist.length > 6) chromaHist.shift();
+    function updateProgress() {
+        const p = (audio.currentTime / audio.duration) * 100;
+        progressBar.style.width = p + "%";
+        currentTimeText.innerText = formatTime(audio.currentTime);
+    }
 
-let chroma = new Array(12).fill(0);
-chromaHist.forEach(c=>{
-for(let i=0;i<12;i++) chroma[i]+=c[i];
-});
-chroma = chroma.map(v => v / chromaHist.length);
+    function formatTime(sec) {
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return `${m}:${s < 10 ? '0' : ''}${s}`;
+    }
 
-// AI boost
-if(ai){
-chroma = chroma.map(v => Math.pow(v, 1.4));
-}
-
-// זיהוי אקורד
-let best = {score:-999, name:"--"};
-let second = {score:-999};
-
-for(let r=0;r<12;r++){
-templates.forEach(t=>{
-let score = 0;
-
-t.i.forEach(i=>{
-score += chroma[(r+i)%12]*1.2;
-});
-
-for(let i=0;i<12;i++){
-if(!t.i.includes((i-r+12)%12)){
-score -= chroma[i]*0.25;
-}
-}
-
-if(score > best.score){
-second = best;
-best = {score, name: notes[r]+t.name};
-}
-else if(score > second.score){
-second = {score};
-}
-});
-}
-
-let conf = best.score/(second.score+0.001);
-if(conf < 1.1) return;
-
-// ROOT FIX (# support)
-let rootMatch = best.name.match(/^([A-G]#?)/);
-let root = rootMatch ? rootMatch[1] : "C";
-let rootIndex = notes.indexOf(root);
-
-// Bass
-let bass = chroma.indexOf(Math.max(...chroma));
-if(bass !== rootIndex){
-best.name += "/" + notes[bass];
-}
-
-// Stability
-if(best.name === lastChord){
-stability++;
-} else {
-stability = 0;
-}
-
-if(stability < 2) return;
-
-lastChord = best.name;
-
-updateUI(best.name);
-updateKey(chroma);
-}
-
-function updateUI(ch){
-
-const el = document.getElementById("chord");
-
-if(el.innerText === ch) return;
-
-el.innerText = ch;
-
-// timeline
-let tag = document.createElement("div");
-tag.className = "tag";
-tag.innerText = ch;
-timeline.prepend(tag);
-
-if(timeline.children.length > 30){
-timeline.lastChild.remove();
-}
-
-updatePiano(ch);
-}
-
-function updateKey(chroma){
-let i = chroma.indexOf(Math.max(...chroma));
-document.getElementById("key").innerText = notes[i];
-}
-
-function updatePiano(ch){
-
-document.querySelectorAll(".key").forEach(k=>k.classList.remove("active"));
-
-let rootMatch = ch.match(/^([A-G]#?)/);
-let root = rootMatch ? rootMatch[1] : "C";
-let rootIndex = notes.indexOf(root);
-
-[0,4,7].forEach(i=>{
-let n = (rootIndex+i)%12;
-
-document.querySelectorAll(".key").forEach(k=>{
-if(k.dataset.note % 12 == n){
-k.classList.add("active");
-}
-});
-});
-}
-
-// יצירת פסנתר
-const piano = document.getElementById("piano");
-for(let i=0;i<24;i++){
-let k = document.createElement("div");
-k.className = "key";
-k.dataset.note = i;
-piano.appendChild(k);
-}
-
+    // ניווט בתוך השיר בלחיצה על הפס
+    document.getElementById('progressContainer').onclick = (e) => {
+        const rect = e.target.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const p = x / rect.width;
+        audio.currentTime = p * audio.duration;
+    };
 </script>
 
 </body>

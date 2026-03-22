@@ -2,94 +2,119 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מזהה אקורדים ניסיוני</title>
+    <title>מנתח אקורדים - קבצים ומיקרופון</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/meyda/5.6.0/meyda.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; text-align: center; padding: 50px; }
-        .container { display: flex; justify-content: center; gap: 10px; height: 200px; align-items: flex-end; margin-top: 30px; }
-        .column { display: flex; flex-direction: column; align-items: center; }
-        .bar { width: 30px; background: #4CAF50; transition: height 0.1s; border-radius: 5px 5px 0 0; }
-        .label { font-size: 12px; margin-top: 5px; color: #aaa; }
-        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; transition: 0.3s; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; text-align: center; padding: 30px; }
+        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
+        button, input[type="file"] { padding: 12px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; }
+        button { background: #007bff; color: white; font-weight: bold; }
         button:hover { background: #0056b3; }
-        button:disabled { background: #444; cursor: not-allowed; }
-        h2 { min-height: 40px; color: #ffeb3b; }
+        .visualizer { display: flex; justify-content: center; gap: 8px; height: 150px; align-items: flex-end; margin-top: 20px; }
+        .bar { width: 25px; background: #4CAF50; transition: height 0.1s; border-radius: 3px 3px 0 0; }
+        .label { font-size: 11px; margin-top: 5px; color: #888; }
+        #chord-result { font-size: 2.5em; color: #ffeb3b; margin: 20px 0; text-shadow: 0 0 10px rgba(255,235,59,0.3); }
+        audio { width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <h1>מזהה אקורדים בזמן אמת</h1>
-    <p>לחץ על הכפתור ונגן אקורד מול המיקרופון</p>
+
+<div class="card">
+    <h1>מנתח אקורדים חכם</h1>
     
-    <button id="start">התחל להקשיב</button>
-    <h2 id="chord-name">מזהה...</h2>
-    
-    <div class="container" id="visualizer">
-        <div class="column"><div id="bar-0" class="bar" style="height: 0%"></div><div class="label">C</div></div>
-        <div class="column"><div id="bar-1" class="bar" style="height: 0%"></div><div class="label">C#</div></div>
-        <div class="column"><div id="bar-2" class="bar" style="height: 0%"></div><div class="label">D</div></div>
-        <div class="column"><div id="bar-3" class="bar" style="height: 0%"></div><div class="label">D#</div></div>
-        <div class="column"><div id="bar-4" class="bar" style="height: 0%"></div><div class="label">E</div></div>
-        <div class="column"><div id="bar-5" class="bar" style="height: 0%"></div><div class="label">F</div></div>
-        <div class="column"><div id="bar-6" class="bar" style="height: 0%"></div><div class="label">F#</div></div>
-        <div class="column"><div id="bar-7" class="bar" style="height: 0%"></div><div class="label">G</div></div>
-        <div class="column"><div id="bar-8" class="bar" style="height: 0%"></div><div class="label">G#</div></div>
-        <div class="column"><div id="bar-9" class="bar" style="height: 0%"></div><div class="label">A</div></div>
-        <div class="column"><div id="bar-10" class="bar" style="height: 0%"></div><div class="label">A#</div></div>
-        <div class="column"><div id="bar-11" class="bar" style="height: 0%"></div><div class="label">B</div></div>
+    <div class="controls">
+        <button id="mic-btn">🎤 השתמש במיקרופון</button>
+        <div style="border-top: 1px solid #333; padding-top: 15px;">
+            <label>או העלה קובץ שמע (MP3/WAV):</label><br><br>
+            <input type="file" id="audio-file" accept="audio/*">
+        </div>
     </div>
 
-    <script>
-        const startBtn = document.getElementById('start');
-        const chordDisplay = document.getElementById('chord-name');
+    <audio id="audio-player" controls style="display:none;"></audio>
+    <h2 id="chord-result">ממתין לפקודה...</h2>
 
-        const CHORD_TEMPLATES = {
-            'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
-            'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
-            'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
-            'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
-            'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
-            'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
-        };
+    <div class="visualizer" id="visualizer">
+        </div>
+</div>
 
-        startBtn.onclick = async () => {
-            try {
-                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                const source = audioContext.createMediaStreamSource(stream);
+<script>
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let source;
+    let analyzer;
+    const chordResult = document.getElementById('chord-result');
+    const audioPlayer = document.getElementById('audio-player');
+    const visualizer = document.getElementById('visualizer');
 
-                const analyzer = Meyda.createMeydaAnalyzer({
-                    audioContext: audioContext,
-                    source: source,
-                    bufferSize: 1024,
-                    featureExtractors: ['chroma'],
-                    callback: features => {
-                        const chroma = features.chroma;
-                        chroma.forEach((value, i) => {
-                            const bar = document.getElementById(`bar-${i}`);
-                            bar.style.height = (value * 100) + '%';
-                            bar.style.background = value > 0.6 ? '#ffeb3b' : '#4CAF50';
-                        });
+    // יצירת הגרפים
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    notes.forEach((note, i) => {
+        const col = document.createElement('div');
+        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
+        visualizer.appendChild(col);
+    });
 
-                        let bestChord = "מזהה...";
-                        let maxSimilarity = 0.5;
+    const CHORD_TEMPLATES = {
+        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
+        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
+        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
+        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
+        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
+        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
+    };
 
-                        for (const [name, notes] of Object.entries(CHORD_TEMPLATES)) {
-                            let currentSimilarity = notes.reduce((sum, noteIdx) => sum + chroma[noteIdx], 0);
-                            if (currentSimilarity > maxSimilarity) {
-                                maxSimilarity = currentSimilarity;
-                                bestChord = name;
-                            }
-                        }
-                        chordDisplay.innerText = "אקורד מזוהה: " + bestChord;
-                    }
+    function setupAnalyzer(audioSource) {
+        if (analyzer) analyzer.stop();
+        
+        analyzer = Meyda.createMeydaAnalyzer({
+            audioContext: audioContext,
+            source: audioSource,
+            bufferSize: 1024,
+            featureExtractors: ['chroma'],
+            callback: features => {
+                const chroma = features.chroma;
+                chroma.forEach((val, i) => {
+                    const bar = document.getElementById(`bar-${i}`);
+                    bar.style.height = (val * 100) + '%';
+                    bar.style.background = val > 0.6 ? '#ffeb3b' : '#4CAF50';
                 });
-                analyzer.start();
-                startBtn.innerText = "מקשיב...";
-                startBtn.disabled = true;
-            } catch (err) {
-                alert("שגיאה בגישה למיקרופון: " + err);
+
+                let bestChord = "---";
+                let maxSim = 0.5;
+                for (const [name, notesIdx] of Object.entries(CHORD_TEMPLATES)) {
+                    let sim = notesIdx.reduce((sum, idx) => sum + chroma[idx], 0);
+                    if (sim > maxSim) { maxSim = sim; bestChord = name; }
+                }
+                chordResult.innerText = bestChord;
             }
-        };
-    </script>
+        });
+        analyzer.start();
+    }
+
+    // טיפול במיקרופון
+    document.getElementById('mic-btn').onclick = async () => {
+        await audioContext.resume();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        source = audioContext.createMediaStreamSource(stream);
+        setupAnalyzer(source);
+        chordResult.innerText = "מקשיב...";
+    };
+
+    // טיפול בקובץ
+    document.getElementById('audio-file').onchange = async (e) => {
+        await audioContext.resume();
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const url = URL.createObjectURL(file);
+        audioPlayer.src = url;
+        audioPlayer.style.display = 'block';
+        
+        source = audioContext.createMediaElementSource(audioPlayer);
+        source.connect(audioContext.destination);
+        setupAnalyzer(source);
+        chordResult.innerText = "נגן את הקובץ...";
+    };
+</script>
 </body>
 </html>

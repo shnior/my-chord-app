@@ -2,69 +2,70 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Chord Analyzer Pro - Studio Edition</title>
+    <title>Chord Analyzer Ultra - 2 Octaves</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        :root { --bg: #0a0a0c; --text: #e2e8f0; --accent: #f43f5e; --panel: #161b22; }
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 900px; margin: 0 auto; background: var(--panel); padding: 30px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        :root { --bg: #0d1117; --text: #c9d1d9; --accent: #238636; --key-w: #ffffff; --key-b: #161b22; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 1100px; margin: 0 auto; background: #161b22; padding: 30px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
         
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: 12px; margin-bottom: 25px; border: 1px solid #30363d; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px; }
         .group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
-        input { background: #0d1117; color: #58a6ff; border: 1px solid #30363d; padding: 10px; border-radius: 6px; text-align: center; font-family: monospace; }
+        label { font-size: 11px; color: #8b949e; font-weight: bold; }
+        input { background: #0d1117; color: #58a6ff; border: 1px solid #30363d; padding: 10px; border-radius: 6px; text-align: center; }
 
-        #main-display { margin: 20px 0; background: #0d1117; border-radius: 15px; border: 1px solid #30363d; padding: 40px 10px; position: relative; overflow: hidden; }
-        #current-chord { font-size: 10em; font-weight: 800; color: #f2cc60; margin: 0; line-height: 1; transition: all 0.2s ease; }
-        
-        /* פסנתר מקצועי */
-        .piano { display: flex; justify-content: center; height: 160px; margin: 25px auto; padding: 10px; background: #000; border-radius: 10px; width: fit-content; border: 4px solid #21262d; }
-        .key { width: 42px; height: 140px; border: 1px solid #000; background: #f0f0f0; border-radius: 0 0 4px 4px; position: relative; }
-        .key.black { width: 28px; height: 85px; background: #333; margin-left: -14px; margin-right: -14px; z-index: 2; border-radius: 0 0 2px 2px; }
-        .key.active { background: #f43f5e !important; box-shadow: 0 0 20px #f43f5e; transform: translateY(2px); }
+        #main-display { background: #010409; border-radius: 15px; border: 2px solid #30363d; padding: 50px 0; margin-bottom: 30px; }
+        #current-chord { font-size: 11em; font-weight: 900; color: #f2cc60; margin: 0; line-height: 1; text-shadow: 0 0 40px rgba(242, 204, 96, 0.2); }
 
-        #start-btn { background: #238636; color: white; border: none; padding: 20px; font-size: 1.3em; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; transition: 0.3s; }
-        #start-btn:hover { background: #2ea043; }
-        audio { width: 100%; margin-top: 15px; opacity: 0.7; }
+        /* פסנתר 2 אוקטבות */
+        .piano-container { overflow-x: auto; padding: 20px 0; }
+        .piano { display: flex; justify-content: center; position: relative; height: 180px; width: fit-content; margin: 0 auto; background: #000; padding: 8px; border-radius: 10px; border: 3px solid #30363d; }
+        .key { width: 45px; height: 160px; border: 1px solid #111; background: var(--key-w); border-radius: 0 0 5px 5px; position: relative; transition: 0.1s; }
+        .key.black { width: 30px; height: 100px; background: var(--key-b); margin-left: -15px; margin-right: -15px; z-index: 2; border-radius: 0 0 3px 3px; }
+        .key.active { background: #f43f5e !important; box-shadow: 0 0 20px #f43f5e; transform: translateY(3px); }
+
+        #start-btn { background: #238636; color: white; border: none; padding: 20px; font-size: 1.4em; border-radius: 12px; cursor: pointer; width: 100%; font-weight: bold; }
+        audio { width: 100%; margin-top: 20px; filter: invert(0.9); opacity: 0.8; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="dashboard">
-        <div class="group"><label>רקע</label><input type="color" id="bgCol"></div>
-        <div class="group"><label>גופן</label><input type="color" id="txtCol"></div>
-        <div class="group"><label>BPM (יציבות)</label><input type="number" id="bpm" value="120"></div>
+        <div class="group"><label>צבע רקע</label><input type="color" id="bgCol"></div>
+        <div class="group"><label>צבע גופן</label><input type="color" id="txtCol"></div>
         <div class="group"><label>Transpose</label><input type="number" id="trans" value="0"></div>
+        <div class="group"><label>רגישות (Smoothing)</label><input type="range" id="smooth" min="5" max="30" value="18"></div>
     </div>
 
-    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 20px; color: #8b949e;">
-    <button id="start-btn" disabled>הפעל מנוע ניתוח Pro</button>
+    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 20px;">
+    <button id="start-btn" disabled>הפעל ניתוח אקורדים XL</button>
     <audio id="audio" controls></audio>
 
     <div id="main-display">
         <p id="current-chord">---</p>
     </div>
 
-    <div class="piano" id="piano">
-        <div class="key" data-n="0"></div><div class="key black" data-n="1"></div>
-        <div class="key" data-n="2"></div><div class="key black" data-n="3"></div>
-        <div class="key" data-n="4"></div><div class="key" data-n="5"></div>
-        <div class="key black" data-n="6"></div><div class="key" data-n="7"></div>
-        <div class="key black" data-n="8"></div><div class="key" data-n="9"></div>
-        <div class="key black" data-n="10"></div><div class="key" data-n="11"></div>
-        <div class="key" data-n="12"></div>
+    <div class="piano-container">
+        <div class="piano" id="piano"></div>
     </div>
 </div>
 
 <script>
     const audio = document.getElementById('audio'), btn = document.getElementById('start-btn'), display = document.getElementById('current-chord');
-    const bgIn = document.getElementById('bgCol'), txtIn = document.getElementById('txtCol');
+    const bgIn = document.getElementById('bgCol'), txtIn = document.getElementById('txtCol'), piano = document.getElementById('piano');
     let ctx, source, analyzer;
-    
-    // הגדרות וזיכרון
-    bgIn.value = localStorage.getItem('studio-bg') || '#0a0a0c';
-    txtIn.value = localStorage.getItem('studio-txt') || '#e2e8f0';
+
+    // יצירת 2 אוקטבות (24 קלידים)
+    const pattern = [0,1,0,1,0,0,1,0,1,0,1,0]; // 0 לבן, 1 שחור
+    for(let i=0; i<24; i++) {
+        const isBlack = pattern[i % 12] === 1;
+        piano.innerHTML += `<div class="key ${isBlack ? 'black' : ''}" data-note="${i}"></div>`;
+    }
+
+    // זיכרון הגדרות
+    bgIn.value = localStorage.getItem('studio-bg') || '#0d1117';
+    txtIn.value = localStorage.getItem('studio-txt') || '#c9d1d9';
     const applyColors = () => {
         document.documentElement.style.setProperty('--bg', bgIn.value);
         document.documentElement.style.setProperty('--text', txtIn.value);
@@ -75,11 +76,8 @@
 
     document.getElementById('fileInput').onchange = (e) => { if(e.target.files[0]) { audio.src = URL.createObjectURL(e.target.files[0]); btn.disabled = false; } };
 
-    // מנגנון החלקה מקצועי
-    let chordBuffer = [];
-    const BUFFER_SIZE = 15; // כמות דגימות להחלטה
-    let lastDisplayedChord = "";
-    let lastSwitchTime = 0;
+    let history = [];
+    let lastChord = "";
 
     btn.onclick = async () => {
         if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -92,35 +90,32 @@
             featureExtractors: ['chroma'],
             callback: f => {
                 const trans = parseInt(document.getElementById('trans').value);
+                const smoothVal = parseInt(document.getElementById('smooth').value);
                 const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
                 const chords = [{n:'', p:[4,7], w:1.2}, {n:'m', p:[3,7], w:1.1}];
 
-                let bestChord = "---";
-                let topScore = 0.65;
+                let best = "---";
+                let top = 0.6;
 
                 for(let r=0; r<12; r++) {
                     for(let c of chords) {
                         let s = (f.chroma[r] + f.chroma[(r+c.p[0])%12] + f.chroma[(r+c.p[1])%12]) / 3 * c.w;
-                        if(s > topScore) { topScore = s; bestChord = notes[(r+trans+12)%12] + c.n; }
+                        if(s > top) { top = s; best = notes[(r+trans+12)%12] + c.n; }
                     }
                 }
 
-                // ניהול באפר ההחלקות
-                chordBuffer.push(bestChord);
-                if (chordBuffer.length > BUFFER_SIZE) chordBuffer.shift();
+                history.push(best);
+                if(history.length > smoothVal) history.shift();
 
-                // בחירת האקורד השכיח ביותר בבאפר (Voting)
+                // מציאת האקורד הכי יציב בבאפר
                 const counts = {};
-                chordBuffer.forEach(x => counts[x] = (counts[x] || 0) + 1);
-                const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                history.forEach(x => counts[x] = (counts[x] || 0) + 1);
+                const stable = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
 
-                const now = Date.now();
-                // החלפה רק אם האקורד שונה, שכיח מספיק, ועבר זמן מינימלי (400ms)
-                if (winner !== lastDisplayedChord && counts[winner] > BUFFER_SIZE * 0.7 && now - lastSwitchTime > 400) {
-                    display.innerText = winner;
-                    lastDisplayedChord = winner;
-                    lastSwitchTime = now;
-                    updatePiano(winner);
+                if(stable !== lastChord && counts[stable] > smoothVal * 0.6) {
+                    display.innerText = stable;
+                    lastChord = stable;
+                    updatePiano(stable);
                 }
             }
         });
@@ -131,17 +126,15 @@
     function updatePiano(chord) {
         document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
         if (chord === "---") return;
-        
         const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
         const rootStr = chord.replace('m', '');
-        const isMinor = chord.includes('m');
         const rootIdx = notes.indexOf(rootStr);
+        const intervals = chord.includes('m') ? [0, 3, 7] : [0, 4, 7];
         
-        if (rootIdx === -1) return;
-        const intervals = isMinor ? [0, 3, 7] : [0, 4, 7];
         intervals.forEach(i => {
-            const key = document.querySelector(`.key[data-n="${(rootIdx + i) % 12}"]`);
-            if (key) key.classList.add('active');
+            const n1 = (rootIdx + i) % 12;
+            const n2 = n1 + 12;
+            document.querySelectorAll(`.key[data-note="${n1}"], .key[data-note="${n2}"]`).forEach(k => k.classList.add('active'));
         });
     }
 </script>

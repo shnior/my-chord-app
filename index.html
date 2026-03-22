@@ -2,82 +2,101 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מזהה אקורדים - יציב ורגוע</title>
+    <title>מזהה אקורדים מקצועי + Transpose</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 30px; }
-        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #start-btn { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; margin: 20px 0; font-weight: bold; }
-        #start-btn:disabled { background: #444; }
-        #chord-result { font-size: 4.5em; color: #ffeb3b; margin: 20px 0; font-weight: bold; min-height: 1.2em; transition: 0.2s; }
-        .visualizer { display: flex; justify-content: center; gap: 5px; height: 100px; align-items: flex-end; margin-bottom: 20px; }
-        .bar { width: 20px; background: #4CAF50; transition: height 0.1s; border-radius: 3px; }
-        audio { width: 100%; margin-top: 20px; }
-        .label { font-size: 10px; color: #888; margin-top: 5px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { background: #1e1e1e; border-radius: 20px; padding: 25px; max-width: 600px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        
+        /* עיצוב כפתורי טרנספוזיציה */
+        .transpose-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; }
+        .t-btn { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.2s; }
+        .t-btn:hover { background: #666; }
+        #t-value { font-size: 20px; color: #007bff; font-weight: bold; width: 40px; }
+
+        #chord-result { font-size: 5em; color: #ffeb3b; margin: 15px 0; font-weight: 900; min-height: 1.2em; text-shadow: 0 0 20px rgba(255,235,59,0.4); }
+        .visualizer { display: flex; justify-content: center; gap: 4px; height: 80px; align-items: flex-end; margin-bottom: 20px; }
+        .bar { width: 18px; background: #4CAF50; transition: height 0.1s; border-radius: 2px; }
+        #start-btn { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; font-weight: bold; }
+        #start-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
+        .label { font-size: 9px; color: #666; margin-top: 4px; }
+        audio { width: 100%; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>מזהה אקורדים</h1>
-    <p>בחר שיר ולחץ על התחל:</p>
+    <h1>מזהה אקורדים Pro</h1>
     <input type="file" id="audio-file" accept="audio/*">
     
     <div class="visualizer" id="visualizer"></div>
+    
+    <div class="transpose-controls">
+        <span>טרנספוזיציה:</span>
+        <button class="t-btn" onclick="changeTranspose(-1)">-</button>
+        <span id="t-value">0</span>
+        <button class="t-btn" onclick="changeTranspose(1)">+</button>
+    </div>
+
     <h2 id="chord-result">---</h2>
     
-    <button id="start-btn" disabled>טען קובץ</button>
+    <button id="start-btn" disabled>טען שיר</button>
     <audio id="audio-player" controls></audio>
 </div>
 
 <script>
     let audioContext, source, analyzer;
-    const startBtn = document.getElementById('start-btn');
-    const audioFile = document.getElementById('audio-file');
-    const audioPlayer = document.getElementById('audio-player');
-    const chordResult = document.getElementById('chord-result');
-
-    // משתנים להחלקת התצוגה
+    let transpose = 0;
     let lastChord = "---";
     let chordCounter = 0;
-    const SMOOTHING_THRESHOLD = 15; // ככל שהמספר גבוה יותר, השינוי יהיה איטי ויציב יותר
+    const SMOOTHING = 12;
 
-    // בניית הויזואליזציה
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    notes.forEach((note, i) => {
+    const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
+    // יצירת הויזואליזציה
+    NOTES.forEach((note, i) => {
         const col = document.createElement('div');
         col.style.display = 'flex'; col.style.flexDirection = 'column'; col.style.alignItems = 'center';
         col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
         document.getElementById('visualizer').appendChild(col);
     });
 
-    const CHORD_TEMPLATES = {
-        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
-        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
-        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
-        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
-        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
-        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
-    };
+    // מילון אקורדים מורחב (חצי טון מעל הבסיס)
+    const CHORD_DATA = [
+        { name: '', pattern: [0, 4, 7] },          // Major
+        { name: 'm', pattern: [0, 3, 7] },         // Minor
+        { name: '7', pattern: [0, 4, 7, 10] },     // Dominant 7
+        { name: 'maj7', pattern: [0, 4, 7, 11] },  // Major 7
+        { name: 'm7', pattern: [0, 3, 7, 10] },    // Minor 7
+        { name: 'sus4', pattern: [0, 5, 7] },      // Sus4
+        { name: 'dim', pattern: [0, 3, 6] }        // Diminished
+    ];
 
-    audioFile.onchange = (e) => {
+    function changeTranspose(val) {
+        transpose = (transpose + val + 12) % 12;
+        if (transpose > 6) transpose -= 12;
+        document.getElementById('t-value').innerText = transpose >= 0 ? "+" + transpose : transpose;
+    }
+
+    function getTransposedNote(noteIdx) {
+        let newIdx = (noteIdx + transpose + 12) % 12;
+        return NOTES[newIdx];
+    }
+
+    document.getElementById('audio-file').onchange = (e) => {
         if (e.target.files[0]) {
-            audioPlayer.src = URL.createObjectURL(e.target.files[0]);
-            startBtn.disabled = false;
-            startBtn.innerText = "התחל ניתוח";
+            document.getElementById('audio-player').src = URL.createObjectURL(e.target.files[0]);
+            document.getElementById('start-btn').disabled = false;
         }
     };
 
-    startBtn.onclick = async () => {
+    document.getElementById('start-btn').onclick = async () => {
         if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         await audioContext.resume();
-
         if (!source) {
-            source = audioContext.createMediaElementSource(audioPlayer);
+            source = audioContext.createMediaElementSource(document.getElementById('audio-player'));
             source.connect(audioContext.destination);
         }
-
-        if (analyzer) analyzer.stop();
 
         analyzer = Meyda.createMeydaAnalyzer({
             audioContext: audioContext,
@@ -90,23 +109,31 @@
                     document.getElementById(`bar-${i}`).style.height = (val * 100) + '%';
                 });
 
-                let currentBest = "---";
-                let maxSim = 0.5;
+                let bestChord = "---";
+                let maxScore = 0.6;
 
-                for (const [name, idxs] of Object.entries(CHORD_TEMPLATES)) {
-                    let sim = idxs.reduce((a, b) => a + chroma[b], 0);
-                    if (sim > maxSim) { maxSim = sim; currentBest = name; }
+                // בדיקת כל אקורד אפשרי בכל סולם
+                for (let root = 0; root < 12; root++) {
+                    for (let type of CHORD_DATA) {
+                        let score = type.pattern.reduce((sum, interval) => {
+                            return sum + chroma[(root + interval) % 12];
+                        }, 0) / type.pattern.length;
+
+                        if (score > maxScore) {
+                            maxScore = score;
+                            // החלת טרנספוזיציה על התצוגה
+                            bestChord = getTransposedNote(root) + type.name;
+                        }
+                    }
                 }
 
-                // מנגנון ההחלקה:
-                if (currentBest === lastChord) {
-                    chordCounter = 0; // האקורד נשאר אותו דבר, הכל טוב
+                if (bestChord === lastChord) {
+                    chordCounter = 0;
                 } else {
                     chordCounter++;
-                    // רק אם האקורד החדש מופיע מספיק פעמים ברצף, נחליף אותו בתצוגה
-                    if (chordCounter > SMOOTHING_THRESHOLD) {
-                        lastChord = currentBest;
-                        chordResult.innerText = lastChord;
+                    if (chordCounter > SMOOTHING) {
+                        lastChord = bestChord;
+                        document.getElementById('chord-result').innerText = lastChord;
                         chordCounter = 0;
                     }
                 }
@@ -114,9 +141,9 @@
         });
 
         analyzer.start();
-        audioPlayer.play();
-        startBtn.innerText = "מנתח...";
-        startBtn.disabled = true;
+        document.getElementById('audio-player').play();
+        document.getElementById('start-btn').innerText = "מנתח...";
+        document.getElementById('start-btn').disabled = true;
     };
 </script>
 </body>

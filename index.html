@@ -2,163 +2,156 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>זיהוי אקורדים מקצועי </title>
+    <title>זיהוי אקורדים מקצועי</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121512; color: white; text-align: center; padding: 20px; }
-        .card { background: #1e1e1e; border-radius: 24px; padding: 30px; max-width: 700px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { background: #1e1e1e; border-radius: 24px; padding: 30px; max-width: 800px; margin: 0 auto; border: 1px solid #333; }
         
-        .file-upload-box { border: 2px dashed #444; padding: 20px; border-radius: 15px; margin-bottom: 20px; background: #252525; }
+        .setup-row { display: flex; justify-content: center; gap: 15px; margin-bottom: 20px; background: #252525; padding: 15px; border-radius: 12px; }
+        .input-group { display: flex; flex-direction: column; align-items: center; }
+        input[type="number"] { width: 70px; padding: 8px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
         
-        #chord-result { font-size: 7em; color: #ffeb3b; margin: 10px 0; font-weight: 900; text-shadow: 0 0 30px rgba(255,235,59,0.3); }
-        
-        /* אזור רשימת האקורדים של השיר */
-        .chord-log-container { margin-top: 30px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #444; text-align: right; }
-        .chord-log-container h3 { margin-top: 0; color: #007bff; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        #chord-log { display: flex; flex-wrap: wrap; gap: 10px; font-size: 1.5em; min-height: 50px; }
-        .log-item { background: #333; padding: 5px 15px; border-radius: 8px; color: #ffeb3b; border: 1px solid #555; animation: fadeIn 0.3s; }
-        
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #chord-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 15px; 
+            margin-top: 30px; 
+            padding: 10px;
+        }
+        .measure { 
+            background: #2a2a2a; 
+            border: 2px solid #444; 
+            padding: 20px; 
+            border-radius: 10px; 
+            font-size: 2em; 
+            font-weight: bold; 
+            color: #ffeb3b;
+            position: relative;
+        }
+        .measure-num { position: absolute; top: 5px; right: 8px; font-size: 12px; color: #666; }
+        .active-measure { border-color: #ff0055; box-shadow: 0 0 15px rgba(255,0,85,0.4); }
 
-        .controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .t-btn { background: #007bff; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; }
-        
-        #start-btn { background: #ff0055; color: white; border: none; padding: 15px 50px; font-size: 22px; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 15px; }
-        #start-btn:disabled { background: #333; cursor: not-allowed; }
-        
-        audio { width: 100%; margin-top: 10px; }
+        #start-btn { background: #ff0055; color: white; border: none; padding: 15px 60px; font-size: 22px; border-radius: 50px; cursor: pointer; font-weight: bold; width: 100%; }
+        #start-btn:disabled { background: #333; opacity: 0.5; }
+        audio { width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>זיהוי אקורדים מקצועי</h1>
+    <h1>זיהוי אקורדים לפי תיבות</h1>
     
-    <div class="file-upload-box">
+    <div class="setup-row">
+        <div class="input-group">
+            <label>קצב (BPM)</label>
+            <input type="number" id="bpm-input" value="120">
+        </div>
+        <div class="input-group">
+            <label>מספר תיבות</label>
+            <input type="number" id="measures-input" value="16">
+        </div>
+        <div class="input-group">
+            <label>Transpose</label>
+            <input type="number" id="trans-input" value="0">
+        </div>
+    </div>
+
+    <div class="file-upload-box" style="margin-bottom:20px;">
         <input type="file" id="audio-file" accept="audio/*">
     </div>
-    
-    <h2 id="chord-result">---</h2>
 
-    <div class="controls">
-        <button class="t-btn" onclick="changeTranspose(-1)">-</button>
-        <span id="t-display" style="font-weight: bold;">סולם: 0</span>
-        <button class="t-btn" onclick="changeTranspose(1)">+</button>
-        <button id="clear-btn" style="margin-right:20px; background:#444; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;" onclick="clearLog()">נקה רשימה</button>
-    </div>
-    
-    <button id="start-btn" disabled>התחל ניתוח שיר מלא</button>
+    <button id="start-btn" disabled>התחל ניתוח מבני</button>
     <audio id="audio-player" controls></audio>
 
-    <div class="chord-log-container">
-        <h3>מהלך האקורדים בשיר:</h3>
-        <div id="chord-log">
-            </div>
-    </div>
+    <div id="chord-grid">
+        </div>
 </div>
 
 <script>
     let audioContext, source, analyzer;
-    let transpose = 0;
-    let lastLoggedChord = "";
-    let chordHistory = [];
-    const HISTORY_SIZE = 20;
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
-    function clearLog() {
-        document.getElementById('chord-log').innerHTML = "";
-        lastLoggedChord = "";
-    }
-
-    function changeTranspose(val) {
-        transpose = (transpose + val + 12) % 12;
-        let displayVal = transpose > 6 ? transpose - 12 : transpose;
-        document.getElementById('t-display').innerText = "סולם: " + (displayVal >= 0 ? "+" : "") + displayVal;
-    }
+    const CHORD_TEMPLATES = [
+        { name: '', pattern: [0, 4, 7] }, { name: 'm', pattern: [0, 3, 7] },
+        { name: '7', pattern: [0, 4, 7, 10] }, { name: 'maj7', pattern: [0, 4, 7, 11] }
+    ];
 
     document.getElementById('audio-file').onchange = (e) => {
         if (e.target.files[0]) {
             document.getElementById('audio-player').src = URL.createObjectURL(e.target.files[0]);
             document.getElementById('start-btn').disabled = false;
-            clearLog();
         }
     };
 
     document.getElementById('start-btn').onclick = async () => {
-        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioContext.state === 'suspended') await audioContext.resume();
+        const bpm = parseInt(document.getElementById('bpm-input').value);
+        const totalMeasures = parseInt(document.getElementById('measures-input').value);
+        const transpose = parseInt(document.getElementById('trans-input').value);
+        const secPerMeasure = (60 / bpm) * 4; // חישוב זמן תיבה ב-4/4
 
-        if (!source) {
-            source = audioContext.createMediaElementSource(document.getElementById('audio-player'));
-            source.connect(audioContext.destination);
+        // יצירת גריד תיבות
+        const grid = document.getElementById('chord-grid');
+        grid.innerHTML = "";
+        for(let i=0; i<totalMeasures; i++) {
+            const div = document.createElement('div');
+            div.className = 'measure';
+            div.id = `m-${i}`;
+            div.innerHTML = `<span class="measure-num">${i+1}</span><span class="chord-val">---</span>`;
+            grid.appendChild(div);
         }
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        source = audioContext.createMediaElementSource(document.getElementById('audio-player'));
+        source.connect(audioContext.destination);
+
+        let measureScores = {}; // אגירת ציוני אקורדים לכל תיבה
 
         analyzer = Meyda.createMeydaAnalyzer({
             audioContext: audioContext,
             source: source,
-            bufferSize: 2048,
+            bufferSize: 4096,
             featureExtractors: ['chroma'],
             callback: features => {
-                const chroma = features.chroma;
-                const threshold = Math.max(...chroma) * 0.6;
-                const cleanChroma = chroma.map(v => v > threshold ? v : 0);
+                const currentTime = document.getElementById('audio-player').currentTime;
+                const currentMeasure = Math.floor(currentTime / secPerMeasure);
+                
+                if (currentMeasure >= totalMeasures) return;
 
+                // סימון התיבה הפעילה
+                document.querySelectorAll('.measure').forEach(m => m.classList.remove('active-measure'));
+                const activeDiv = document.getElementById(`m-${currentMeasure}`);
+                if (activeDiv) activeDiv.classList.add('active-measure');
+
+                // ניתוח אקורד נוכחי
                 let bestChord = "---";
                 let maxScore = 0;
-
-                const CHORD_DATA = [
-                    { name: '', pattern: [0, 4, 7] },
-                    { name: 'm', pattern: [0, 3, 7] },
-                    { name: '7', pattern: [0, 4, 7, 10] },
-                    { name: 'maj7', pattern: [0, 4, 7, 11] },
-                    { name: 'm7', pattern: [0, 3, 7, 10] }
-                ];
-
                 for (let root = 0; root < 12; root++) {
-                    for (let type of CHORD_DATA) {
-                        let score = type.pattern.reduce((sum, interval) => sum + cleanChroma[(root + interval) % 12], 0);
+                    for (let type of CHORD_TEMPLATES) {
+                        let score = type.pattern.reduce((s, idx) => s + features.chroma[(root + idx) % 12], 0);
                         if (score > maxScore) {
                             maxScore = score;
-                            let transposedRoot = (root + transpose + 12) % 12;
-                            bestChord = NOTES[transposedRoot] + type.name;
+                            let tRoot = (root + transpose + 12) % 12;
+                            bestChord = NOTES[tRoot] + type.name;
                         }
                     }
                 }
 
+                // עדכון התיבה בזמן אמת עם האקורד הכי חזק שנשמע בה עד עכשיו
                 if (bestChord !== "---") {
-                    chordHistory.push(bestChord);
-                    if (chordHistory.length > HISTORY_SIZE) chordHistory.shift();
+                    if (!measureScores[currentMeasure]) measureScores[currentMeasure] = {};
+                    measureScores[currentMeasure][bestChord] = (measureScores[currentMeasure][bestChord] || 0) + 1;
                     
-                    const counts = {};
-                    chordHistory.forEach(c => counts[c] = (counts[c] || 0) + 1);
-                    const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                    const winner = Object.keys(measureScores[currentMeasure]).reduce((a, b) => 
+                        measureScores[currentMeasure][a] > measureScores[currentMeasure][b] ? a : b);
                     
-                    document.getElementById('chord-result').innerText = winner;
-
-                    // הוספה לרשימה רק אם האקורד באמת השתנה והוא יציב
-                    if (winner !== lastLoggedChord && counts[winner] > 12) {
-                        addChordToLog(winner);
-                        lastLoggedChord = winner;
-                    }
+                    activeDiv.querySelector('.chord-val').innerText = winner;
                 }
             }
         });
 
         analyzer.start();
         document.getElementById('audio-player').play();
-        document.getElementById('start-btn').innerText = "מנתח שיר...";
-        document.getElementById('start-btn').disabled = true;
     };
-
-    function addChordToLog(chord) {
-        const log = document.getElementById('chord-log');
-        const span = document.createElement('span');
-        span.className = 'log-item';
-        span.innerText = chord;
-        log.appendChild(span);
-        // גלילה אוטומטית לסוף
-        log.scrollTop = log.scrollHeight;
-    }
 </script>
 </body>
 </html>

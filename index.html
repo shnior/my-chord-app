@@ -2,30 +2,31 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Chord Analyzer Ultra - 2 Octaves</title>
+    <title>Chord Analyzer Studio Pro - Interactive</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        :root { --bg: #0d1117; --text: #c9d1d9; --accent: #238636; --key-w: #ffffff; --key-b: #161b22; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; text-align: center; }
-        .container { max-width: 1100px; margin: 0 auto; background: #161b22; padding: 30px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 20px 60px rgba(0,0,0,0.7); }
+        :root { --bg: #0d1117; --text: #c9d1d9; --accent: #f43f5e; }
+        body { font-family: system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 15px; text-align: center; }
+        .container { max-width: 1000px; margin: 0 auto; background: #161b22; padding: 25px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
         
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; margin-bottom: 25px; }
-        .group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 11px; color: #8b949e; font-weight: bold; }
-        input { background: #0d1117; color: #58a6ff; border: 1px solid #30363d; padding: 10px; border-radius: 6px; text-align: center; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .group { display: flex; flex-direction: column; gap: 4px; }
+        label { font-size: 10px; color: #8b949e; font-weight: bold; text-transform: uppercase; }
+        input, select { background: #0d1117; color: #58a6ff; border: 1px solid #30363d; padding: 8px; border-radius: 6px; text-align: center; font-size: 13px; }
 
-        #main-display { background: #010409; border-radius: 15px; border: 2px solid #30363d; padding: 50px 0; margin-bottom: 30px; }
-        #current-chord { font-size: 11em; font-weight: 900; color: #f2cc60; margin: 0; line-height: 1; text-shadow: 0 0 40px rgba(242, 204, 96, 0.2); }
+        #main-display { background: #010409; border-radius: 15px; border: 1px solid #30363d; padding: 40px 0; margin-bottom: 20px; min-height: 200px; display: flex; align-items: center; justify-content: center; }
+        #current-chord { font-size: 10em; font-weight: 900; color: #f2cc60; margin: 0; line-height: 1; transition: 0.1s; }
 
-        /* פסנתר 2 אוקטבות */
-        .piano-container { overflow-x: auto; padding: 20px 0; }
-        .piano { display: flex; justify-content: center; position: relative; height: 180px; width: fit-content; margin: 0 auto; background: #000; padding: 8px; border-radius: 10px; border: 3px solid #30363d; }
-        .key { width: 45px; height: 160px; border: 1px solid #111; background: var(--key-w); border-radius: 0 0 5px 5px; position: relative; transition: 0.1s; }
-        .key.black { width: 30px; height: 100px; background: var(--key-b); margin-left: -15px; margin-right: -15px; z-index: 2; border-radius: 0 0 3px 3px; }
-        .key.active { background: #f43f5e !important; box-shadow: 0 0 20px #f43f5e; transform: translateY(3px); }
+        /* פסנתר אינטראקטיבי */
+        .piano-wrapper { overflow-x: auto; padding: 10px 0; }
+        .piano { display: flex; justify-content: center; position: relative; height: 160px; width: fit-content; margin: 0 auto; background: #000; padding: 5px; border-radius: 8px; }
+        .key { width: 40px; height: 150px; border: 1px solid #111; background: white; border-radius: 0 0 5px 5px; position: relative; cursor: pointer; }
+        .key.black { width: 26px; height: 95px; background: #222; margin-left: -13px; margin-right: -13px; z-index: 2; border-radius: 0 0 3px 3px; }
+        .key.active { background: var(--accent) !important; box-shadow: 0 0 15px var(--accent); }
+        .key:active { background: #38bdf8; }
 
-        #start-btn { background: #238636; color: white; border: none; padding: 20px; font-size: 1.4em; border-radius: 12px; cursor: pointer; width: 100%; font-weight: bold; }
-        audio { width: 100%; margin-top: 20px; filter: invert(0.9); opacity: 0.8; }
+        #start-btn { background: #238636; color: white; border: none; padding: 15px; font-size: 1.2em; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        audio { width: 100%; filter: invert(0.9); opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -34,36 +35,60 @@
     <div class="dashboard">
         <div class="group"><label>צבע רקע</label><input type="color" id="bgCol"></div>
         <div class="group"><label>צבע גופן</label><input type="color" id="txtCol"></div>
+        <div class="group"><label>BPM</label><input type="number" id="bpm" value="120"></div>
+        <div class="group"><label>משקל</label>
+            <select id="sig"><option value="4">4/4</option><option value="3">3/4</option><option value="6">8/6</option></select>
+        </div>
         <div class="group"><label>Transpose</label><input type="number" id="trans" value="0"></div>
-        <div class="group"><label>רגישות (Smoothing)</label><input type="range" id="smooth" min="5" max="30" value="18"></div>
+        <div class="group"><label>רגישות</label><input type="range" id="sens" min="10" max="80" value="35"></div>
     </div>
 
-    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 20px;">
-    <button id="start-btn" disabled>הפעל ניתוח אקורדים XL</button>
+    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 15px;">
+    <button id="start-btn" disabled>הפעל מערכת ניתוח + סאונד</button>
     <audio id="audio" controls></audio>
 
     <div id="main-display">
         <p id="current-chord">---</p>
     </div>
 
-    <div class="piano-container">
+    <div class="piano-wrapper">
         <div class="piano" id="piano"></div>
     </div>
+    <p style="font-size: 12px; color: #8b949e;">* ניתן ללחוץ על הקלידים כדי לשמוע צליל</p>
 </div>
 
 <script>
     const audio = document.getElementById('audio'), btn = document.getElementById('start-btn'), display = document.getElementById('current-chord');
     const bgIn = document.getElementById('bgCol'), txtIn = document.getElementById('txtCol'), piano = document.getElementById('piano');
-    let ctx, source, analyzer;
+    let ctx, source, analyzer, synth;
 
-    // יצירת 2 אוקטבות (24 קלידים)
-    const pattern = [0,1,0,1,0,0,1,0,1,0,1,0]; // 0 לבן, 1 שחור
+    // בניית מקלדת (2 אוקטבות)
+    const pattern = [0,1,0,1,0,0,1,0,1,0,1,0];
     for(let i=0; i<24; i++) {
         const isBlack = pattern[i % 12] === 1;
-        piano.innerHTML += `<div class="key ${isBlack ? 'black' : ''}" data-note="${i}"></div>`;
+        const key = document.createElement('div');
+        key.className = `key ${isBlack ? 'black' : ''}`;
+        key.dataset.note = i;
+        key.onmousedown = () => playNote(i);
+        piano.appendChild(key);
     }
 
-    // זיכרון הגדרות
+    // סאונד לקלידים
+    function playNote(index) {
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(261.63 * Math.pow(2, index / 12), ctx.currentTime);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.8);
+    }
+
+    // שמירת הגדרות
     bgIn.value = localStorage.getItem('studio-bg') || '#0d1117';
     txtIn.value = localStorage.getItem('studio-txt') || '#c9d1d9';
     const applyColors = () => {
@@ -77,8 +102,6 @@
     document.getElementById('fileInput').onchange = (e) => { if(e.target.files[0]) { audio.src = URL.createObjectURL(e.target.files[0]); btn.disabled = false; } };
 
     let history = [];
-    let lastChord = "";
-
     btn.onclick = async () => {
         if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
         await ctx.resume();
@@ -90,12 +113,11 @@
             featureExtractors: ['chroma'],
             callback: f => {
                 const trans = parseInt(document.getElementById('trans').value);
-                const smoothVal = parseInt(document.getElementById('smooth').value);
+                const sens = parseInt(document.getElementById('sens').value) / 100;
                 const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
                 const chords = [{n:'', p:[4,7], w:1.2}, {n:'m', p:[3,7], w:1.1}];
 
-                let best = "---";
-                let top = 0.6;
+                let best = "---", top = sens;
 
                 for(let r=0; r<12; r++) {
                     for(let c of chords) {
@@ -105,17 +127,15 @@
                 }
 
                 history.push(best);
-                if(history.length > smoothVal) history.shift();
-
-                // מציאת האקורד הכי יציב בבאפר
+                if(history.length > 10) history.shift();
+                
                 const counts = {};
                 history.forEach(x => counts[x] = (counts[x] || 0) + 1);
-                const stable = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
 
-                if(stable !== lastChord && counts[stable] > smoothVal * 0.6) {
-                    display.innerText = stable;
-                    lastChord = stable;
-                    updatePiano(stable);
+                if(winner !== display.innerText && counts[winner] > 5) {
+                    display.innerText = winner;
+                    updatePiano(winner);
                 }
             }
         });
@@ -130,7 +150,6 @@
         const rootStr = chord.replace('m', '');
         const rootIdx = notes.indexOf(rootStr);
         const intervals = chord.includes('m') ? [0, 3, 7] : [0, 4, 7];
-        
         intervals.forEach(i => {
             const n1 = (rootIdx + i) % 12;
             const n2 = n1 + 12;

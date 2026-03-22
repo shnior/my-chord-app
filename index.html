@@ -1,0 +1,68 @@
+const startBtn = document.getElementById('start');
+const chordDisplay = document.createElement('h2'); // אלמנט להצגת שם האקורד
+chordDisplay.style.color = "#ffeb3b";
+document.body.insertBefore(chordDisplay, document.getElementById('visualizer'));
+
+// הגדרת תבניות אקורדים (0-11 מייצגים C עד B)
+const CHORD_TEMPLATES = {
+    'C Major': [0, 4, 7],
+    'C# Major': [1, 5, 8],
+    'D Major': [2, 6, 9],
+    'Eb Major': [3, 7, 10],
+    'E Major': [4, 8, 11],
+    'F Major': [5, 9, 0],
+    'F# Major': [6, 10, 1],
+    'G Major': [7, 11, 2],
+    'Ab Major': [8, 0, 3],
+    'A Major': [9, 1, 4],
+    'Bb Major': [10, 2, 5],
+    'B Major': [11, 3, 6],
+    // אפשר להוסיף כאן אקורדים מינוריים: [0, 3, 7] ל-Cm וכו'
+    'C Minor': [0, 3, 7],
+    'D Minor': [2, 5, 9],
+    'E Minor': [4, 7, 11],
+    'A Minor': [9, 0, 4],
+    'G Minor': [7, 10, 2]
+};
+
+startBtn.onclick = async () => {
+    const audioContext = new AudioContext();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const source = audioContext.createMediaStreamSource(stream);
+
+    const analyzer = Meyda.createMeydaAnalyzer({
+        audioContext: audioContext,
+        source: source,
+        bufferSize: 1024, // הגדלנו לדיוק טוב יותר
+        featureExtractors: ['chroma'],
+        callback: features => {
+            const chroma = features.chroma;
+            
+            // עדכון הויזואליזציה
+            chroma.forEach((value, i) => {
+                const bar = document.getElementById(`bar-${i}`);
+                bar.style.height = (value * 100) + '%';
+            });
+
+            // זיהוי האקורד המתאים ביותר
+            let bestChord = "מזהה...";
+            let maxSimilarity = 0.5; // סף מינימלי לזיהוי
+
+            for (const [name, notes] of Object.entries(CHORD_TEMPLATES)) {
+                // חישוב סכום העוצמות של התווים השייכים לאקורד
+                let currentSimilarity = notes.reduce((sum, noteIdx) => sum + chroma[noteIdx], 0);
+                
+                if (currentSimilarity > maxSimilarity) {
+                    maxSimilarity = currentSimilarity;
+                    bestChord = name;
+                }
+            }
+            
+            chordDisplay.innerText = "אקורד מזוהה: " + bestChord;
+        }
+    });
+    
+    analyzer.start();
+    startBtn.innerText = "מקשיב...";
+    startBtn.disabled = true;
+};

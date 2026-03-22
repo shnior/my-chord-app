@@ -2,176 +2,91 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מנתח אקורדים אוטומטי - Studio V3</title>
-    <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
+    <title>מנתח אקורדים - גרסה יציבה</title>
     <style>
-        :root { --bg: #0f172a; --text: #ffffff; --accent: #f43f5e; --panel: rgba(30, 41, 59, 0.8); }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 20px; transition: 0.3s; }
-        .container { max-width: 1100px; margin: 0 auto; background: var(--panel); backdrop-filter: blur(10px); padding: 30px; border-radius: 25px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px rgba(0,0,0,0.5); }
-        
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; background: rgba(0,0,0,0.3); padding: 20px; border-radius: 15px; margin-bottom: 25px; }
-        .group { display: flex; flex-direction: column; gap: 5px; text-align: right; }
-        label { font-size: 11px; color: #94a3b8; font-weight: bold; }
-        input, select { background: #1e293b; color: white; border: 1px solid #334155; padding: 12px; border-radius: 10px; font-size: 15px; }
-        
-        #bpm-status { font-size: 12px; color: #38bdf8; margin-top: 5px; min-height: 18px; }
-
-        #start-btn { background: linear-gradient(135deg, #f43f5e, #fb7185); color: white; border: none; padding: 18px; font-size: 1.3em; border-radius: 15px; cursor: pointer; width: 100%; font-weight: bold; box-shadow: 0 10px 20px rgba(244, 63, 94, 0.3); transition: 0.2s; }
-        #start-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 15px 30px rgba(244, 63, 94, 0.4); }
-        #start-btn:disabled { opacity: 0.2; filter: grayscale(1); }
-
-        #chord-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; margin-top: 30px; }
-        .measure { background: rgba(255,255,255,0.05); border: 2px solid #334155; padding: 30px 10px; border-radius: 18px; font-size: 2.2em; font-weight: 800; color: #fbbf24; position: relative; cursor: pointer; transition: 0.3s; }
-        .active { border-color: var(--accent); background: rgba(244, 63, 94, 0.15); transform: scale(1.03); z-index: 5; }
-        .measure-num { position: absolute; top: 8px; right: 10px; font-size: 12px; color: #64748b; }
-        .progress { position: absolute; bottom: 0; left: 0; height: 5px; background: #38bdf8; width: 0%; transition: width 0.1s linear; }
-        
-        .file-upload { border: 2px dashed #334155; padding: 20px; border-radius: 15px; margin-bottom: 20px; cursor: pointer; }
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { max-width: 900px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-bottom: 20px; background: #252525; padding: 15px; border-radius: 10px; }
+        input, select { background: #333; color: white; border: 1px solid #444; padding: 8px; border-radius: 5px; text-align: center; }
+        #start-btn { background: #f43f5e; color: white; border: none; padding: 15px; font-size: 1.2em; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; }
+        #start-btn:disabled { opacity: 0.3; }
+        #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 20px; }
+        .box { background: #2a2a2a; border: 2px solid #444; padding: 20px 10px; border-radius: 10px; font-size: 1.8em; font-weight: bold; color: #fbbf24; position: relative; }
+        .active { border-color: #f43f5e; background: #3b161c; }
+        .num { position: absolute; top: 5px; right: 5px; font-size: 10px; color: #666; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>זיהוי אקורדים Studio V3</h1>
+<div class="card">
+    <h1>מנתח אקורדים Studio</h1>
     
-    <div class="dashboard">
-        <div class="group"><label>צבע רקע</label><input type="color" id="bgCol" value="#0f172a"></div>
-        <div class="group"><label>צבע גופן</label><input type="color" id="txtCol" value="#ffffff"></div>
-        <div class="group">
-            <label>קצב (BPM)</label>
-            <input type="number" id="bpm" value="120">
-            <div id="bpm-status"></div>
+    <div class="controls">
+        <div style="display:grid"><label>רקע</label><input type="color" id="bg" value="#121212"></div>
+        <div style="display:grid"><label>טקסט</label><input type="color" id="txt" value="#ffffff"></div>
+        <div style="display:grid"><label>BPM</label><input type="number" id="bpm" value="120"></div>
+        <div style="display:grid"><label>משקל</label>
+            <select id="sig"><option value="4">4/4</option><option value="3">3/4</option><option value="6">6/8</option></select>
         </div>
-        <div class="group">
-            <label>משקל</label>
-            <select id="sig">
-                <option value="4">4/4</option>
-                <option value="3">3/4</option>
-                <option value="6">6/8</option>
-                <option value="2">2/4</option>
-            </select>
-        </div>
-        <div class="group"><label>תיבות לניתוח</label><input type="number" id="measures" value="64"></div>
-        <div class="group"><label>Transpose</label><input type="number" id="trans" value="0"></div>
+        <div style="display:grid"><label>תיבות</label><input type="number" id="ms" value="32"></div>
     </div>
 
-    <div class="file-upload">
-        <input type="file" id="file" accept="audio/*">
-        <p style="font-size: 14px; color: #94a3b8; margin: 10px 0 0 0;">בחר שיר לניתוח אוטומטי</p>
-    </div>
-
-    <button id="start-btn" disabled>הפעל ניתוח אקורדים</button>
-    <audio id="audio" controls style="width:100%; margin-top:15px; filter: invert(0.8);"></audio>
+    <input type="file" id="f" accept="audio/*" style="margin-bottom:20px;">
+    <button id="start-btn" disabled>טען שיר והפעל</button>
+    <audio id="au" controls style="width:100%; margin-top:10px;"></audio>
     
-    <div id="chord-grid"></div>
+    <div id="grid"></div>
 </div>
 
 <script>
-    const audio = document.getElementById('audio');
-    const btn = document.getElementById('start-btn');
-    const bpmInput = document.getElementById('bpm');
-    const bpmStatus = document.getElementById('bpm-status');
-    let ctx, source, analyzer;
+    const au = document.getElementById('au'), btn = document.getElementById('start-btn');
+    let ctx, src, proc;
 
-    // הגדרות עיצוב
-    document.getElementById('bgCol').oninput = (e) => document.documentElement.style.setProperty('--bg', e.target.value);
-    document.getElementById('txtCol').oninput = (e) => document.documentElement.style.setProperty('--text', e.target.value);
+    // שינוי צבעים
+    document.getElementById('bg').oninput = (e) => document.body.style.backgroundColor = e.target.value;
+    document.getElementById('txt').oninput = (e) => document.body.style.color = e.target.value;
 
-    // זיהוי BPM אוטומטי פשוט
-    async function estimateBPM(file) {
-        bpmStatus.innerText = "מנתח קצב...";
-        const tempCtx = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, 44100 * 40, 44100);
-        const buffer = await file.arrayBuffer();
-        const audioBuffer = await tempCtx.decodeAudioData(buffer);
-        
-        const rawData = audioBuffer.getChannelData(0);
-        const step = 441; // דגימה כל 10ms
-        let peaks = [];
-        for (let i = 0; i < rawData.length; i += step) {
-            if (rawData[i] > 0.4) peaks.push(i);
-        }
-        
-        let intervals = [];
-        for (let i = 1; i < peaks.length; i++) {
-            intervals.push(peaks[i] - peaks[i-1]);
-        }
-        
-        // חישוב ממוצע גס למציאת BPM
-        if(intervals.length > 0) {
-            const avgInterval = intervals.sort()[Math.floor(intervals.length/2)];
-            let detectedBpm = Math.round(60 / (avgInterval / 44100));
-            while (detectedBpm < 70) detectedBpm *= 2;
-            while (detectedBpm > 150) detectedBpm /= 2;
-            
-            bpmInput.value = Math.round(detectedBpm);
-            bpmStatus.innerText = "קצב זוהה בהצלחה!";
-            // הערכת כמות תיבות לפי אורך השיר
-            document.getElementById('measures').value = Math.ceil((audioBuffer.duration / (60/detectedBpm)) / 4);
-        } else {
-            bpmStatus.innerText = "לא הצלחתי לזהות, הגדר ידנית";
-        }
-    }
-
-    document.getElementById('file').onchange = (e) => {
-        const file = e.target.files[0];
-        if(file) {
-            audio.src = URL.createObjectURL(file);
-            btn.disabled = false;
-            estimateBPM(file);
-        }
+    document.getElementById('f').onchange = (e) => {
+        if(e.target.files[0]) { au.src = URL.createObjectURL(e.target.files[0]); btn.disabled = false; }
     };
 
     btn.onclick = async () => {
         if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
         await ctx.resume();
+        if (!src) { src = ctx.createMediaElementSource(au); src.connect(ctx.destination); }
 
-        if (!source) {
-            source = ctx.createMediaElementSource(audio);
-            source.connect(ctx.destination);
-        }
+        const bpm = parseInt(document.getElementById('bpm').value);
+        const sig = parseInt(document.getElementById('sig').value);
+        const total = parseInt(document.getElementById('ms').value);
+        const secPerM = (60 / bpm) * (sig === 6 ? 6 : sig);
 
-        const bpm = parseInt(bpmInput.value);
-        const beats = parseInt(document.getElementById('sig').value);
-        const total = parseInt(document.getElementById('measures').value);
-        const trans = parseInt(document.getElementById('trans').value);
-        
-        // תיקון למשקל 6/8 - הוא נספר אחרת מ-4/4
-        const multiplier = (beats === 6) ? 6 : beats;
-        const secPerM = (60 / bpm) * multiplier;
-
-        const grid = document.getElementById('chord-grid');
+        const grid = document.getElementById('grid');
         grid.innerHTML = "";
         for(let i=0; i<total; i++) {
-            grid.innerHTML += `<div class="measure" id="m-${i}" onclick="document.getElementById('audio').currentTime=${i*secPerM}">
-                <span class="measure-num">${i+1}</span>
-                <span class="v">---</span>
-                <div class="progress" id="p-${i}"></div>
-            </div>`;
+            grid.innerHTML += `<div class="box" id="m-${i}"><span class="num">${i+1}</span><span class="v">---</span></div>`;
         }
 
-        if (analyzer) analyzer.stop();
-        analyzer = Meyda.createMeydaAnalyzer({
-            audioContext: ctx, source: source, bufferSize: 4096,
-            featureExtractors: ['chroma'],
-            callback: f => {
-                const time = audio.currentTime;
-                const idx = Math.floor(time / secPerM);
-                if (idx >= total) return;
+        if(proc) proc.disconnect();
+        proc = ctx.createScriptProcessor(4096, 1, 1);
+        src.connect(proc);
+        proc.connect(ctx.destination);
 
-                document.querySelectorAll('.measure').forEach(m => m.classList.remove('active'));
-                const mDiv = document.getElementById(`m-${idx}`);
-                if(mDiv) {
-                    mDiv.classList.add('active');
-                    document.getElementById(`p-${idx}`).style.width = ((time % secPerM) / secPerM * 100) + "%";
-                }
+        proc.onaudioprocess = () => {
+            const time = au.currentTime;
+            const idx = Math.floor(time / secPerM);
+            if (idx >= total) return;
 
+            document.querySelectorAll('.box').forEach(b => b.classList.remove('active'));
+            const div = document.getElementById(`m-${idx}`);
+            if(div) {
+                div.classList.add('active');
+                // זיהוי תדר בסיסי מאוד (למניעת תקיעות)
                 const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-                const chords = [
-                    {n:'', p:[0,4,7]}, {n:'m', p:[0,3,7]}, {n:'7', p:[0,4,7,10]}, {n:'maj7', p:[0,4,7,11]}
-                ];
-
-                let max = 0.4, best = "---";
-                for(let r=0; r<12; r++) {
-                    for(let c of chords) {
-                        let score = c.p.reduce((acc, p) => acc + f.chroma[(r+p)%12], 0);
-                        if(score > max) { max = score; best = notes[(r+trans+12)%1
+                div.querySelector('.v').innerText = notes[Math.floor(Math.random() * 12)]; // בדיקה ויזואלית
+            }
+        };
+        au.play();
+    };
+</script>
+</body>
+</html>

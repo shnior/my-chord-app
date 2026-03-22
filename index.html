@@ -2,52 +2,82 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>זיהוי אקורדים מקצועי - Studio Edition</title>
+    <title>זיהוי אקורדים - Studio V2</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        :root {
-            --primary: #00d2ff;
-            --secondary: #ff0055;
-            --bg: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --text: #f8fafc;
-        }
-
         body { 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-            background: radial-gradient(circle at top, #1e293b 0%, #0f172a 100%);
-            color: var(--text); 
-            margin: 0;
-            padding: 40px 20px;
-            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: #0f172a; 
+            color: white; 
+            margin: 0; padding: 20px;
         }
 
         .container { 
-            max-width: 1000px; 
+            max-width: 1100px; 
             margin: 0 auto; 
-            background: var(--card-bg); 
-            backdrop-filter: blur(12px);
-            border-radius: 30px; 
-            padding: 40px; 
-            border: 1px solid rgba(255,255,255,0.1);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            background: #1e293b; 
+            border-radius: 20px; 
+            padding: 30px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #334155;
         }
 
-        h1 { 
+        h1 { color: #38bdf8; margin-bottom: 20px; font-size: 2.5em; }
+
+        /* לוח בקרה עליון */
+        .dashboard { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
+            gap: 15px; 
+            background: #0f172a; 
+            padding: 20px; 
+            border-radius: 15px; 
+            margin-bottom: 25px;
+        }
+
+        .group { display: flex; flex-direction: column; gap: 5px; text-align: right; }
+        label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
+        input, select { 
+            background: #1e293b; color: white; border: 1px solid #334155; 
+            padding: 10px; border-radius: 8px; font-size: 16px; 
+        }
+
+        /* גריד התיבות */
+        #chord-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+            gap: 15px; 
+            margin-top: 30px; 
+        }
+
+        .measure { 
+            background: #334155; 
+            border: 2px solid transparent; 
+            padding: 35px 10px; 
+            border-radius: 15px; 
             font-size: 2.8em; 
             font-weight: 800; 
-            margin-bottom: 30px;
-            background: linear-gradient(to right, var(--primary), #9d50bb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fbbf24;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden; /* עבור המטרונום */
+        }
+        
+        .measure-num { position: absolute; top: 8px; right: 10px; font-size: 12px; color: #94a3b8; }
+
+        /* מטרונום ויזואלי - פס התקדמות בתוך התיבה */
+        .beat-progress {
+            position: absolute; bottom: 0; left: 0;
+            height: 4px; background: #38bdf8;
+            width: 0%; transition: width 0.1s linear;
         }
 
-        /* פאנל הגדרות */
-        .setup-panel { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); 
-            gap: 20px; 
-            background: rgba(15, 23, 42, 0.5); 
-            padding: 25px; 
-            border-radius: 20px; 
-            margin-bottom:
+        .active-measure { 
+            border-color: #f43f5e; 
+            background: #4c1d24;
+            transform: scale(1.02);
+        }
+
+        #start-btn { 
+            background: #f43f5e; color: white; border: none; padding: 20px; 
+            font-size: 1

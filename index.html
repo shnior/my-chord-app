@@ -2,82 +2,102 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>זיהוי אקורדים - Studio V2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>זיהוי אקורדים מקצועי</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        body { 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            background: #0f172a; 
-            color: white; 
-            margin: 0; padding: 20px;
-        }
-
-        .container { 
-            max-width: 1100px; 
-            margin: 0 auto; 
-            background: #1e293b; 
-            border-radius: 20px; 
-            padding: 30px; 
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border: 1px solid #334155;
-        }
-
-        h1 { color: #38bdf8; margin-bottom: 20px; font-size: 2.5em; }
-
-        /* לוח בקרה עליון */
-        .dashboard { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
-            gap: 15px; 
-            background: #0f172a; 
-            padding: 20px; 
-            border-radius: 15px; 
-            margin-bottom: 25px;
-        }
-
-        .group { display: flex; flex-direction: column; gap: 5px; text-align: right; }
-        label { font-size: 12px; color: #94a3b8; text-transform: uppercase; }
-        input, select { 
-            background: #1e293b; color: white; border: 1px solid #334155; 
-            padding: 10px; border-radius: 8px; font-size: 16px; 
-        }
-
-        /* גריד התיבות */
-        #chord-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-            gap: 15px; 
-            margin-top: 30px; 
-        }
-
-        .measure { 
-            background: #334155; 
-            border: 2px solid transparent; 
-            padding: 35px 10px; 
-            border-radius: 15px; 
-            font-size: 2.8em; 
-            font-weight: 800; 
-            color: #fbbf24;
-            position: relative;
-            cursor: pointer;
-            overflow: hidden; /* עבור המטרונום */
-        }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #121212; color: #ffffff; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 1000px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
-        .measure-num { position: absolute; top: 8px; right: 10px; font-size: 12px; color: #94a3b8; }
+        h1 { color: #38bdf8; margin-bottom: 25px; }
+        
+        .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; background: #2a2a2a; padding: 20px; border-radius: 15px; margin-bottom: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 5px; }
+        label { font-size: 13px; color: #aaa; }
+        input, select { background: #333; color: white; border: 1px solid #444; padding: 10px; border-radius: 8px; text-align: center; }
 
-        /* מטרונום ויזואלי - פס התקדמות בתוך התיבה */
-        .beat-progress {
-            position: absolute; bottom: 0; left: 0;
-            height: 4px; background: #38bdf8;
-            width: 0%; transition: width 0.1s linear;
+        #start-btn { background: #f43f5e; color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 10px; cursor: pointer; font-weight: bold; width: 100%; margin: 10px 0; }
+        #start-btn:disabled { background: #444; cursor: not-allowed; }
+
+        audio { width: 100%; margin: 15px 0; }
+
+        #chord-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 25px; }
+        
+        .measure { 
+            background: #2a2a2a; border: 2px solid #444; padding: 25px 10px; border-radius: 12px; 
+            font-size: 2.2em; font-weight: 800; color: #fbbf24; position: relative; cursor: pointer; overflow: hidden;
         }
+        .measure-num { position: absolute; top: 5px; right: 8px; font-size: 12px; color: #666; }
+        .active { border-color: #f43f5e; background: #3b161c; transform: scale(1.02); }
+        
+        .progress-bar { position: absolute; bottom: 0; left: 0; height: 4px; background: #38bdf8; width: 0%; }
+    </style>
+</head>
+<body>
 
-        .active-measure { 
-            border-color: #f43f5e; 
-            background: #4c1d24;
-            transform: scale(1.02);
+<div class="container">
+    <h1>זיהוי אקורדים מקצועי</h1>
+    
+    <div class="setup-grid">
+        <div class="input-group">
+            <label>קצב (BPM)</label>
+            <input type="number" id="bpm" value="120">
+        </div>
+        <div class="input-group">
+            <label>משקל</label>
+            <select id="sig">
+                <option value="4">4/4</option>
+                <option value="3">3/4</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>תיבות</label>
+            <input type="number" id="measures" value="32">
+        </div>
+        <div class="input-group">
+            <label>Transpose</label>
+            <input type="number" id="trans" value="0">
+        </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+        <input type="file" id="audio-file" accept="audio/*">
+    </div>
+
+    <button id="start-btn" disabled>הפעל ניתוח</button>
+    <audio id="player" controls></audio>
+
+    <div id="chord-grid"></div>
+</div>
+
+<script>
+    let audioCtx, source, analyzer;
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const chordTypes = [
+        { n: '', p: [0, 4, 7] }, { n: 'm', p: [0, 3, 7] },
+        { n: '7', p: [0, 4, 7, 10] }, { n: 'maj7', p: [0, 4, 7, 11] }, { n: 'm7', p: [0, 3, 7, 10] }
+    ];
+
+    const player = document.getElementById('player');
+    const startBtn = document.getElementById('start-btn');
+    const grid = document.getElementById('chord-grid');
+
+    document.getElementById('audio-file').onchange = (e) => {
+        if (e.target.files[0]) {
+            player.src = URL.createObjectURL(e.target.files[0]);
+            startBtn.disabled = false;
         }
+    };
 
-        #start-btn { 
-            background: #f43f5e; color: white; border: none; padding: 20px; 
-            font-size: 1
+    startBtn.onclick = async () => {
+        const bpm = parseInt(document.getElementById('bpm').value);
+        const beats = parseInt(document.getElementById('sig').value);
+        const total = parseInt(document.getElementById('measures').value);
+        const trans = parseInt(document.getElementById('trans').value);
+        const secPerMeasure = (60 / bpm) * beats;
+
+        grid.innerHTML = "";
+        for(let i=0; i<total; i++) {
+            const div = document.createElement('div');
+            div.className = 'measure'; div.id = `m-${i}`;
+            div.

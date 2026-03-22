@@ -2,30 +2,31 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מזהה אקורדים - גרסה סופית</title>
+    <title>מזהה אקורדים - יציב ורגוע</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
         body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 30px; }
-        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #333; }
-        #start-btn { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; margin: 20px 0; }
+        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #start-btn { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; margin: 20px 0; font-weight: bold; }
         #start-btn:disabled { background: #444; }
-        #chord-result { font-size: 4em; color: #ffeb3b; margin: 20px 0; font-weight: bold; }
+        #chord-result { font-size: 4.5em; color: #ffeb3b; margin: 20px 0; font-weight: bold; min-height: 1.2em; transition: 0.2s; }
         .visualizer { display: flex; justify-content: center; gap: 5px; height: 100px; align-items: flex-end; margin-bottom: 20px; }
         .bar { width: 20px; background: #4CAF50; transition: height 0.1s; border-radius: 3px; }
         audio { width: 100%; margin-top: 20px; }
+        .label { font-size: 10px; color: #888; margin-top: 5px; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h1>מזהה אקורדים</h1>
-    <p>בחר שיר מהמחשב:</p>
+    <p>בחר שיר ולחץ על התחל:</p>
     <input type="file" id="audio-file" accept="audio/*">
     
     <div class="visualizer" id="visualizer"></div>
     <h2 id="chord-result">---</h2>
     
-    <button id="start-btn" disabled>טען קובץ קודם</button>
+    <button id="start-btn" disabled>טען קובץ</button>
     <audio id="audio-player" controls></audio>
 </div>
 
@@ -36,18 +37,27 @@
     const audioPlayer = document.getElementById('audio-player');
     const chordResult = document.getElementById('chord-result');
 
-    // יצירת הגרפים
-    for(let i=0; i<12; i++) {
-        const bar = document.createElement('div');
-        bar.id = `bar-${i}`;
-        bar.className = 'bar';
-        document.getElementById('visualizer').appendChild(bar);
-    }
+    // משתנים להחלקת התצוגה
+    let lastChord = "---";
+    let chordCounter = 0;
+    const SMOOTHING_THRESHOLD = 15; // ככל שהמספר גבוה יותר, השינוי יהיה איטי ויציב יותר
+
+    // בניית הויזואליזציה
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    notes.forEach((note, i) => {
+        const col = document.createElement('div');
+        col.style.display = 'flex'; col.style.flexDirection = 'column'; col.style.alignItems = 'center';
+        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
+        document.getElementById('visualizer').appendChild(col);
+    });
 
     const CHORD_TEMPLATES = {
-        'C Major': [0, 4, 7], 'D Major': [2, 6, 9], 'E Major': [4, 8, 11],
-        'F Major': [5, 9, 0], 'G Major': [7, 11, 2], 'A Major': [9, 1, 4], 'B Major': [11, 3, 6],
-        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11], 'A Minor': [9, 0, 4]
+        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
+        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
+        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
+        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
+        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
+        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
     };
 
     audioFile.onchange = (e) => {
@@ -55,19 +65,11 @@
             audioPlayer.src = URL.createObjectURL(e.target.files[0]);
             startBtn.disabled = false;
             startBtn.innerText = "התחל ניתוח";
-            chordResult.innerText = "מוכן!";
         }
     };
 
     startBtn.onclick = async () => {
-        if (typeof Meyda === 'undefined') {
-            alert("הספרייה לא נטענה, נסה לרענן את הדף");
-            return;
-        }
-
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
         await audioContext.resume();
 
         if (!source) {
@@ -83,22 +85,37 @@
             bufferSize: 1024,
             featureExtractors: ['chroma'],
             callback: features => {
-                features.chroma.forEach((val, i) => {
-                    document.getElementById(`bar-${i}`).style.height = (val * 100) + 'px';
+                const chroma = features.chroma;
+                chroma.forEach((val, i) => {
+                    document.getElementById(`bar-${i}`).style.height = (val * 100) + '%';
                 });
 
-                let best = "---", max = 0.5;
+                let currentBest = "---";
+                let maxSim = 0.5;
+
                 for (const [name, idxs] of Object.entries(CHORD_TEMPLATES)) {
-                    let s = idxs.reduce((a, b) => a + features.chroma[b], 0);
-                    if (s > max) { max = s; best = name; }
+                    let sim = idxs.reduce((a, b) => a + chroma[b], 0);
+                    if (sim > maxSim) { maxSim = sim; currentBest = name; }
                 }
-                chordResult.innerText = best;
+
+                // מנגנון ההחלקה:
+                if (currentBest === lastChord) {
+                    chordCounter = 0; // האקורד נשאר אותו דבר, הכל טוב
+                } else {
+                    chordCounter++;
+                    // רק אם האקורד החדש מופיע מספיק פעמים ברצף, נחליף אותו בתצוגה
+                    if (chordCounter > SMOOTHING_THRESHOLD) {
+                        lastChord = currentBest;
+                        chordResult.innerText = lastChord;
+                        chordCounter = 0;
+                    }
+                }
             }
         });
 
         analyzer.start();
         audioPlayer.play();
-        startBtn.innerText = "מנתח כעת...";
+        startBtn.innerText = "מנתח...";
         startBtn.disabled = true;
     };
 </script>

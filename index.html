@@ -1,4 +1,50 @@
-let audioContext;
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מזהה אקורדים מקצועי</title>
+    <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #121212; color: white; text-align: center; padding: 20px; margin: 0; }
+        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 40px auto; border: 1px solid #333; box-shadow: 0 15px 50px rgba(0,0,0,0.7); }
+        h1 { margin-bottom: 10px; font-size: 28px; }
+        .upload-section { margin: 25px 0; border: 2px dashed #444; padding: 20px; border-radius: 12px; }
+        input[type="file"] { width: 100%; color: #aaa; cursor: pointer; }
+        #start-btn { background: #007bff; color: white; border: none; padding: 18px 60px; font-size: 22px; border-radius: 50px; cursor: pointer; transition: 0.3s; font-weight: bold; margin-top: 20px; box-shadow: 0 5px 20px rgba(0,123,255,0.4); }
+        #start-btn:hover { background: #0056b3; transform: scale(1.05); }
+        #start-btn:active { transform: scale(0.95); }
+        #chord-result { font-size: 4.5em; color: #ffeb3b; margin: 25px 0; min-height: 1.2em; text-shadow: 0 0 25px rgba(255,235,59,0.5); font-weight: 800; }
+        .visualizer { display: flex; justify-content: center; gap: 8px; height: 120px; align-items: flex-end; margin-bottom: 25px; }
+        .bar { width: 22px; background: #4CAF50; transition: height 0.1s; border-radius: 5px 5px 0 0; border: 1px solid rgba(255,255,255,0.1); }
+        .label { font-size: 11px; color: #888; margin-top: 5px; font-weight: bold; }
+        audio { width: 100%; margin-top: 20px; border-radius: 30px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>מזהה אקורדים</h1>
+    <p style="color: #888;">בחר קובץ מהמחשב ולחץ על התחל</p>
+
+    <div class="upload-section">
+        <input type="file" id="audio-file" accept="audio/*">
+    </div>
+
+    <div class="visualizer" id="visualizer">
+        </div>
+
+    <h2 id="chord-result">---</h2>
+
+    <button id="start-btn">התחל ניתוח</button>
+    
+    <div id="audio-container" style="margin-top:20px; display:none;">
+        <audio id="audio-player" controls></audio>
+    </div>
+</div>
+
+<script>
+    let audioContext;
     let source;
     let analyzer;
 
@@ -6,80 +52,18 @@ let audioContext;
     const audioFile = document.getElementById('audio-file');
     const audioPlayer = document.getElementById('audio-player');
     const chordResult = document.getElementById('chord-result');
+    const visualizer = document.getElementById('visualizer');
 
-    // פונקציה לעדכון מצב הכפתור
-    function updateButtonState() {
-        if (audioFile.files.length > 0) {
-            startBtn.disabled = false;
-            chordResult.innerText = "מוכן!";
-        }
-    }
+    // בניית הויזואליזציה של 12 התווים
+    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    notes.forEach((note, i) => {
+        const col = document.createElement('div');
+        col.style.display = 'flex'; col.style.flexDirection = 'column'; col.style.alignItems = 'center';
+        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
+        visualizer.appendChild(col);
+    });
 
-    audioFile.onchange = (e) => {
-        if (e.target.files[0]) {
-            audioPlayer.src = URL.createObjectURL(e.target.files[0]);
-            audioPlayer.style.display = 'block';
-            updateButtonState();
-        }
-    };
-
-    // בדיקה ראשונית אם כבר נבחר קובץ (למקרה של ריענון)
-    updateButtonState();
-
-    startBtn.onclick = async () => {
-        if (typeof Meyda === 'undefined') {
-            alert("הספרייה Meyda לא נטענה. אנא המתן או רענן.");
-            return;
-        }
-
-        try {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            await audioContext.resume();
-
-            if (!source) {
-                source = audioContext.createMediaElementSource(audioPlayer);
-                source.connect(audioContext.destination);
-            }
-
-            if (analyzer) analyzer.stop();
-
-            analyzer = Meyda.createMeydaAnalyzer({
-                audioContext: audioContext,
-                source: source,
-                bufferSize: 1024,
-                featureExtractors: ['chroma'],
-                callback: features => {
-                    features.chroma.forEach((val, i) => {
-                        const bar = document.getElementById(`bar-${i}`);
-                        if(bar) bar.style.height = (val * 100) + '%';
-                    });
-
-                    let bestChord = "---";
-                    let maxSim = 0.5;
-                    const CHORD_TEMPLATES = {
-                        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
-                        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
-                        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
-                        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
-                        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
-                        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
-                    };
-
-                    for (const [name, notesIdx] of Object.entries(CHORD_TEMPLATES)) {
-                        let sim = notesIdx.reduce((sum, idx) => sum + features.chroma[idx], 0);
-                        if (sim > maxSim) { maxSim = sim; bestChord = name; }
-                    }
-                    chordResult.innerText = bestChord;
-                }
-            });
-
-            analyzer.start();
-            audioPlayer.play();
-            startBtn.innerText = "מנתח...";
-            startBtn.disabled = true;
-        } catch (err) {
-            alert("שגיאה: " + err.message);
-        }
-    };
+    const CHORD_TEMPLATES = {
+        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
+        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
+        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3

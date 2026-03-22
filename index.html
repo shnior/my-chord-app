@@ -2,1108 +2,287 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Maestro Studio Pro V22 | High-End Audio Workstation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maestro Studio Pro | Shneior Eisenbach Edition</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        /* עיצוב ברמה עולמית - Black Edition */
         :root {
-            --bg-deep: #020408;
-            --panel: #0d1117;
-            --accent: #00f2ff;
-            --accent-soft: rgba(0, 242, 255, 0.15);
-            --gold: #ffcc00;
-            --red: #ff3e3e;
-            --glass: rgba(255, 255, 255, 0.03);
-            --border: #30363d;
+            --bg: #05070a; --panel: #0d1117; --accent: #00f2ff;
+            --gold: #ffcc00; --red: #ff3e3e; --border: #30363d; --text: #e6edf3;
         }
+        * { box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
-        body {
-            background-color: var(--bg-deep);
-            color: #e6edf3;
-            font-family: 'Inter', -apple-system, sans-serif;
-            margin: 0;
-            display: grid;
-            grid-template-columns: 380px 1fr;
-            grid-template-rows: 60px 1fr 220px;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* Top Navigation Bar */
-        header {
-            grid-column: 1 / -1;
-            background: var(--panel);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 25px;
-            justify-content: space-between;
-            z-index: 100;
-        }
-
-        .logo { font-weight: 900; letter-spacing: 2px; color: var(--accent); display: flex; align-items: center; gap: 10px; }
-        .cpu-load { font-size: 11px; color: #8b949e; display: flex; align-items: center; gap: 5px; }
-        .load-bar { width: 100px; height: 4px; background: #21262d; border-radius: 2px; overflow: hidden; }
-        .load-fill { height: 100%; background: var(--accent); width: 12%; }
-
-        /* Sidebar Controls */
+        /* Sidebar - Control Center */
         aside {
-            background: #010409;
-            border-left: 1px solid var(--border);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;
+            width: 380px; background: var(--panel); border-left: 1px solid var(--border);
+            padding: 25px; display: flex; flex-direction: column; gap: 20px; box-shadow: 5px 0 30px rgba(0,0,0,0.5); z-index: 20;
         }
+        .logo-area { border-bottom: 2px solid var(--accent); padding-bottom: 15px; margin-bottom: 10px; }
+        .logo-area h1 { font-size: 22px; margin: 0; color: var(--accent); letter-spacing: 1px; }
+        .logo-area span { font-size: 10px; color: #8b949e; text-transform: uppercase; }
 
-        .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: 2px; color: #8b949e; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 10px; }
+        .module { background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 15px; border-radius: 12px; }
+        .label { font-size: 11px; color: #8b949e; font-weight: 800; display: block; margin-bottom: 8px; text-transform: uppercase; }
+        .value-large { font-size: 38px; font-weight: 900; text-align: center; font-family: 'Courier New', monospace; color: #fff; }
 
-        .control-knob-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .knob-unit { background: var(--panel); padding: 12px; border-radius: 12px; border: 1px solid var(--border); text-align: center; }
-        .knob-label { font-size: 11px; margin-bottom: 8px; display: block; color: #8b949e; }
+        /* Main Stage */
+        main { flex: 1; display: flex; flex-direction: column; position: relative; background: radial-gradient(circle at center, #161b22 0%, #05070a 100%); }
+        .chord-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; }
+        #main-chord { font-size: 200px; font-weight: 950; color: var(--gold); text-shadow: 0 0 80px rgba(255,204,0,0.3); margin: 0; line-height: 1; }
+        #chord-details { font-size: 28px; color: var(--accent); font-weight: 300; letter-spacing: 5px; margin-top: 10px; }
+
+        /* Visualizers */
+        #spectrum { position: absolute; width: 100%; height: 100%; top: 0; left: 0; opacity: 0.15; pointer-events: none; }
         
-        /* Main Viewport */
-        main {
-            position: relative;
-            display: flex;
-            flex-direction: column;
-            background: radial-gradient(circle at center, #161b22 0%, #020408 100%);
-        }
-
-        .visualizer-container { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
+        /* Footer - Mixer & Piano */
+        footer { height: 280px; background: #010409; border-top: 1px solid var(--border); padding: 20px; display: grid; grid-template-rows: auto 1fr; gap: 15px; }
+        .history-bar { display: flex; gap: 12px; overflow-x: auto; padding: 10px; direction: ltr; scrollbar-width: none; }
+        .h-chip { background: var(--panel); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; color: var(--accent); font-weight: 900; font-size: 18px; min-width: 80px; text-align: center; transition: 0.3s; }
         
-        #chord-display-huge {
-            font-size: 220px;
-            font-weight: 900;
-            color: var(--gold);
-            text-shadow: 0 0 80px rgba(255, 204, 0, 0.2);
-            z-index: 10;
-        }
+        .piano-container { display: flex; justify-content: center; height: 110px; direction: ltr; perspective: 1000px; }
+        .key { width: 40px; background: #f0f0f0; border: 1px solid #999; border-radius: 0 0 6px 6px; cursor: pointer; position: relative; transition: all 0.1s; transform-origin: top; }
+        .key.black { width: 28px; background: #1a1a1a; height: 65px; margin-left: -14px; margin-right: -14px; z-index: 5; border: 1px solid #000; }
+        .key.active { background: var(--red) !important; transform: rotateX(-15deg) translateY(5px); box-shadow: 0 10px 25px var(--red); border: none; }
 
-        #spectrum-canvas {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        /* Bottom Mixer & Piano */
-        footer {
-            grid-column: 1 / -1;
-            background: #010409;
-            border-top: 1px solid var(--border);
-            display: grid;
-            grid-template-columns: 380px 1fr 300px;
-            padding: 15px;
-            gap: 20px;
-        }
-
-        .piano-keys { display: flex; justify-content: center; height: 110px; direction: ltr; }
-        .k { width: 38px; background: #fff; border: 1px solid #999; border-radius: 0 0 6px 6px; cursor: pointer; position: relative; transition: 0.1s; }
-        .k.b { width: 26px; background: #1a1a1a; height: 65px; margin: 0 -13px; z-index: 5; border: 1px solid #000; border-radius: 0 0 4px 4px; }
-        .k.active { background: var(--red) !important; transform: translateY(5px); box-shadow: 0 0 30px var(--red); border: none; }
-
-        /* Buttons & Inputs */
-        .btn-studio {
-            background: var(--accent);
-            color: #000;
-            border: none;
-            padding: 14px;
-            border-radius: 8px;
-            font-weight: 900;
-            cursor: pointer;
-            width: 100%;
-            text-transform: uppercase;
-            transition: 0.2s;
-        }
-        .btn-studio:hover { box-shadow: 0 0 25px var(--accent); transform: translateY(-2px); }
-
-        input[type="range"] { -webkit-appearance: none; background: #21262d; height: 4px; border-radius: 2px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; cursor: pointer; }
+        /* Controls */
+        .btn { background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 10px; font-weight: 900; cursor: pointer; width: 100%; transition: 0.3s; text-transform: uppercase; }
+        .btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(0,242,255,0.4); }
+        .btn:disabled { opacity: 0.2; cursor: not-allowed; }
+        input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        input[type="number"] { background: #000; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 8px; width: 100%; text-align: center; font-size: 20px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo">MAESTRO V22 <span>•</span> STUDIO PRO</div>
-    <div id="status-msg" style="color: var(--gold); font-size: 12px; font-weight: bold;">מערכת מוכנה לעבודה</div>
-    <div class="cpu-load">
-        DSP LOAD: <div class="load-bar"><div class="load-fill" id="dsp-load"></div></div>
-    </div>
-</header>
-
 <aside>
-    <div class="section-title">בקרת שמע</div>
-    <div class="control-knob-grid">
-        <div class="knob-unit">
-            <span class="knob-label">ווליום ראשי</span>
-            <input type="range" id="master-vol" min="0" max="100" value="60">
-        </div>
-        <div class="knob-unit">
-            <span class="knob-label">טרנספוזיציה</span>
-            <input type="number" id="transpose" value="0" style="width: 100%; background: #000; color: #fff; border: 1px solid #333; text-align: center;">
-        </div>
+    <div class="logo-area">
+        <h1>MAESTRO STUDIO</h1>
+        <span>Professional Chord Engine v22.0</span>
     </div>
 
-    <div class="section-title">מנוע BPM</div>
-    <div class="knob-unit" style="display: flex; align-items: center; justify-content: space-between;">
-        <div id="bpm-val" style="font-size: 30px; font-weight: 900;">---</div>
-        <button class="btn-studio" style="width: 80px; padding: 5px;" onclick="tapTempo()">TAP</button>
+    <div class="module">
+        <label>קצב שיר (BPM)</label>
+        <div id="bpm-display" class="value-large">---</div>
     </div>
 
-    <div class="section-title">עיבוד אותות (FX)</div>
-    <div class="knob-unit">
-        <span class="knob-label">הדהוד (Reverb)</span>
-        <input type="range" id="reverb-mix" min="0" max="100" value="20">
+    <div class="module">
+        <label>טרנספוזיציה (Transpose)</label>
+        <input type="number" id="transpose" value="0">
     </div>
 
-    <button class="btn-studio" style="background: #21262d; color: #fff; margin-top: auto;" onclick="document.getElementById('file-in').click()">טען פרויקט (Audio)</button>
-    <input type="file" id="file-in" style="display:none" accept="audio/*">
-    <button id="main-power" class="btn-studio" disabled>הפעל מנוע סאונד</button>
+    <div class="module">
+        <label>ווליום מקלדת</label>
+        <input type="range" id="volume" min="0" max="100" value="50">
+    </div>
+
+    <div class="module">
+        <label>סטטוס MIDI</label>
+        <div id="midi-status" style="font-size: 12px; color: var(--gold); font-weight: bold; text-align: center;">ממתין לחיבור מקלדת...</div>
+    </div>
+
+    <button class="btn" style="background: #21262d; color: #fff; margin-bottom: 10px;" onclick="document.getElementById('file-input').click()">טען קובץ שמע</button>
+    <input type="file" id="file-input" style="display:none" accept="audio/*">
+    
+    <button id="power-btn" class="btn" disabled>הפעל מנוע סאונד</button>
 </aside>
 
 <main>
-    <canvas id="spectrum-canvas"></canvas>
-    <div class="visualizer-container">
-        <div id="chord-display-huge">--</div>
+    <canvas id="spectrum"></canvas>
+    <div class="chord-center">
+        <div id="main-chord">--</div>
+        <div id="chord-details">ממתין לניתוח שמע</div>
     </div>
+
+    <footer>
+        <div class="history-bar" id="history-rail"></div>
+        <div class="piano-container" id="piano-rail"></div>
+    </footer>
 </main>
 
-<footer>
-    <div id="history-rail" style="display: flex; gap: 10px; align-items: center; overflow-x: hidden; padding: 10px; border-right: 1px solid var(--border);">
-        </div>
-    <div class="piano-keys" id="piano-engine">
-        </div>
-    <div id="fx-visual" style="padding: 10px; border-left: 1px solid var(--border);">
-        <div class="section-title">סטטוס ערוצים</div>
-        <div id="audio-levels" style="height: 50px; background: #000; border-radius: 4px;"></div>
-    </div>
-</footer>
-
 <script>
-/**
- * Maestro Engine V22 - Pro Part 1
- * הקוד הזה עובר אופטימיזציה לביצועים גבוהים וסנכרון מלא.
- */
+    /**
+     * MAESTRO PRO ENGINE - ALL-IN-ONE
+     * Shneior Eisenbach Professional Edition
+     */
 
-// משתנים גלובליים למנוע
-let audioCtx, sourceNode, analyserNode, meydaEngine;
-let reverbNode, masterGain;
-let baseBPM = 120, nextBeat = 0, currentBeat = 0;
-const notesHEB = ["דו", "דו#", "רה", "רה#", "מי", "פה", "פה#", "סול", "סול#", "לה", "לה#", "סי"];
+    // משתני ליבה
+    let audioCtx, source, meyda, analyser, masterGain;
+    let baseBPM = 120, currentTrans = 0;
+    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const notesHeb = ["דו", "דו#", "רה", "רה#", "מי", "פה", "פה#", "סול", "סול#", "לה", "לה#", "סי"];
 
-// 1. אתחול המקלדת
-const pianoEngine = document.getElementById('piano-engine');
-const blackIndices = [1, 3, 6, 8, 10];
-for(let i=0; i<36; i++) {
-    const k = document.createElement('div');
-    k.className = `k ${blackIndices.includes(i%12) ? 'b' : ''}`;
-    k.dataset.note = i;
-    k.onmousedown = () => playStudioNote(i);
-    pianoEngine.appendChild(k);
-}
-
-// 2. מנוע סאונד פוליפוני עם FX
-async function initAudioEngine() {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    masterGain = audioCtx.createGain();
-    analyserNode = audioCtx.createAnalyser();
-    
-    // יצירת Reverb וירטואלי (Impulse Response)
-    reverbNode = audioCtx.createConvolver();
-    // (כאן יבוא קוד לטעינת דגימת חלל בגרסה המורחבת)
-    
-    masterGain.connect(analyserNode).connect(audioCtx.destination);
-    masterGain.gain.value = 0.6;
-}
-
-function playStudioNote(noteIndex) {
-    if(!audioCtx) return;
-    const freq = 440 * Math.pow(2, (noteIndex - 21) / 12);
-    const osc = audioCtx.createOscillator();
-    const g = audioCtx.createGain();
-    
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-    
-    const vol = document.getElementById('master-vol').value / 600;
-    g.gain.setValueAtTime(vol, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
-    
-    osc.connect(g).connect(masterGain);
-    osc.start(); osc.stop(audioCtx.currentTime + 1.2);
-    
-    // ויזואליזציה למקלדת
-    const key = document.querySelector(`.k[data-note="${noteIndex}"]`);
-    key.classList.add('active');
-    setTimeout(() => key.classList.remove('active'), 200);
-}
-
-// 3. מנתח ספקטרום (Canvas)
-const canvas = document.getElementById('spectrum-canvas');
-const ctx = canvas.getContext('2d');
-function drawSpectrum() {
-    if(!analyserNode) return requestAnimationFrame(drawSpectrum);
-    const data = new Uint8Array(analyserNode.frequencyBinCount);
-    analyserNode.getByteFrequencyData(data);
-    
-    canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
-    ctx.clearRect(0,0, canvas.width, canvas.height);
-    ctx.fillStyle = 'rgba(0, 242, 255, 0.2)';
-    
-    const barWidth = canvas.width / 64;
-    for(let i=0; i<64; i++) {
-        const h = (data[i] / 255) * canvas.height;
-        ctx.fillRect(i * barWidth, canvas.height - h, barWidth - 2, h);
+    // 1. אתחול מקלדת (3 אוקטבות)
+    const pianoRail = document.getElementById('piano-rail');
+    const blackKeyMap = [1, 3, 6, 8, 10];
+    for(let i=0; i<36; i++) {
+        const k = document.createElement('div');
+        k.className = `key ${blackKeyMap.includes(i%12) ? 'black' : ''}`;
+        k.dataset.note = i;
+        k.onmousedown = (e) => { e.preventDefault(); playSynthNote(i); };
+        pianoRail.appendChild(k);
     }
-    requestAnimationFrame(drawSpectrum);
-}
-drawSpectrum();
 
-// המשך הקוד (חלקים 2-5) יכללו את זיהוי האקורדים, ה-BPM האוטומטי ושמירת הנתונים...
+    // 2. ניהול קבצים ו-BPM
+    document.getElementById('file-input').onchange = async (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        
+        document.getElementById('chord-details').innerText = "מנתח BPM...";
+        const player = new Audio(URL.createObjectURL(file));
+        window.activePlayer = player;
+        
+        // פונקציית ניתוח BPM מהירה
+        await analyzeBPM(file);
+        
+        document.getElementById('power-btn').disabled = false;
+        document.getElementById('chord-details').innerText = "מוכן לעבודה";
+    };
+
+    async function analyzeBPM(file) {
+        const offCtx = new OfflineAudioContext(1, 44100 * 30, 44100);
+        const buffer = await offCtx.decodeAudioData(await file.arrayBuffer());
+        // לוגיקה פשוטה לזיהוי פיקים
+        const data = buffer.getChannelData(0);
+        let peaks = [];
+        for(let i=0; i<data.length; i+=2000) if(Math.abs(data[i]) > 0.9) peaks.push(i/44100);
+        if(peaks.length > 5) {
+            let diffs = [];
+            for(let i=1; i<peaks.length; i++) diffs.push(peaks[i]-peaks[i-1]);
+            baseBPM = Math.round(60 / (diffs.reduce((a,b)=>a+b)/diffs.length));
+            document.getElementById('bpm-display').innerText = baseBPM;
+        }
+    }
+
+    // 3. מנוע סאונד וזיהוי אקורדים
+    document.getElementById('power-btn').onclick = async () => {
+        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        await audioCtx.resume();
+
+        masterGain = audioCtx.createGain();
+        analyser = audioCtx.createAnalyser();
+        masterGain.connect(analyser).connect(audioCtx.destination);
+
+        source = audioCtx.createMediaElementSource(window.activePlayer);
+        source.connect(masterGain);
+
+        meyda = Meyda.createMeydaAnalyzer({
+            audioContext: audioCtx, source: source, bufferSize: 8192,
+            featureExtractors: ['chroma'],
+            callback: (f) => detectChord(f.chroma)
+        });
+
+        meyda.start();
+        window.activePlayer.play();
+        drawVisualizer();
+    };
+
+    function detectChord(chroma) {
+        const trans = parseInt(document.getElementById('transpose').value);
+        const types = [
+            {n:"", p:[4,7], h:"מז'ור"}, {n:"m", p:[3,7], h:"מינור"},
+            {n:"7", p:[4,10], h:"7"}, {n:"maj7", p:[4,11], h:"מז'ור 7"}
+        ];
+
+        let bestScore = 0.5, bestChord = "--", bestFull = "";
+
+        for(let r=0; r<12; r++) {
+            types.forEach(t => {
+                const score = (chroma[r] * 2 + chroma[(r+t.p[0])%12] + chroma[(r+t.p[1])%12]) / 4;
+                if(score > bestScore) {
+                    bestScore = score;
+                    const root = notes[(r + trans + 12) % 12];
+                    bestChord = root + t.n;
+                    bestFull = notesHeb[(r + trans + 12) % 12] + " " + t.h;
+                }
+            });
+        }
+
+        if(bestChord !== "--" && document.getElementById('main-chord').innerText !== bestChord) {
+            document.getElementById('main-chord').innerText = bestChord;
+            document.getElementById('chord-details').innerText = bestFull;
+            updateHistory(bestChord);
+            lightKeys(bestChord);
+        }
+    }
+
+    function updateHistory(chord) {
+        const rail = document.getElementById('history-rail');
+        const chip = document.createElement('div');
+        chip.className = 'h-chip'; chip.innerText = chord;
+        rail.prepend(chip);
+        if(rail.children.length > 20) rail.lastChild.remove();
+    }
+
+    function lightKeys(chord) {
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        const root = chord.replace(/m|7|maj7/g, '');
+        const rootIdx = notes.indexOf(root);
+        let intervals = [0, 4, 7];
+        if(chord.includes('maj7')) intervals = [0,4,7,11];
+        else if(chord.includes('7')) intervals = [0,4,7,10];
+        else if(chord.includes('m')) intervals = [0,3,7];
+
+        intervals.forEach(i => {
+            const n = (rootIdx + i) % 12;
+            document.querySelectorAll(`.key[data-note="${n}"], .key[data-note="${n+12}"], .key[data-note="${n+24}"]`)
+                    .forEach(k => k.classList.add('active'));
+        });
+    }
+
+    function playSynthNote(note) {
+        if(!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.frequency.value = 440 * Math.pow(2, (note-21)/12);
+        g.gain.value = document.getElementById('volume').value / 500;
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        osc.connect(g).connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.8);
+    }
+
+    // 4. MIDI - חיבור ל-Tyros 5
+    if (navigator.requestMIDIAccess) {
+        navigator.requestMIDIAccess().then(midi => {
+            const inputs = midi.inputs.values();
+            for (let input of inputs) {
+                document.getElementById('midi-status').innerText = "מחובר ל: " + input.name;
+                document.getElementById('midi-status').style.color = "var(--accent)";
+                input.onmidimessage = (msg) => {
+                    const [cmd, note, vel] = msg.data;
+                    if(cmd === 144 && vel > 0) {
+                        const n = note - 36;
+                        if(n >= 0 && n < 36) {
+                            playSynthNote(n);
+                            document.querySelector(`.key[data-note="${n}"]`)?.classList.add('active');
+                        }
+                    } else if(cmd === 128 || (cmd === 144 && vel === 0)) {
+                        document.querySelector(`.key[data-note="${note-36}"]`)?.classList.remove('active');
+                    }
+                };
+            }
+        });
+    }
+
+    // 5. ויזואליזציה (Canvas)
+    function drawVisualizer() {
+        const canvas = document.getElementById('spectrum');
+        const ctx = canvas.getContext('2d');
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        function frame() {
+            analyser.getByteFrequencyData(data);
+            canvas.width = canvas.clientWidth; canvas.height = canvas.clientHeight;
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00f2ff';
+            const barW = canvas.width / 128;
+            for(let i=0; i<128; i++) {
+                const h = (data[i]/255) * canvas.height;
+                ctx.fillRect(i*barW, canvas.height - h, barW - 1, h);
+            }
+            requestAnimationFrame(frame);
+        }
+        frame();
+    }
 </script>
 </body>
 </html>
-/**
- * MAESTRO PRO ENGINE - PART 2: HARMONIC ANALYSIS & PERSISTENCE
- * סך שורות מצטבר: ~850 (מתוך יעד ה-2000)
- */
-
-// --- מערכת ניהול מסד נתונים (IndexedDB) ---
-const DB_NAME = "MaestroStudioDB";
-const DB_VERSION = 1;
-let db;
-
-const initDB = () => {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open(DB_NAME, DB_VERSION);
-        request.onupgradeneeded = (e) => {
-            db = e.target.result;
-            if (!db.objectStoreNames.contains("settings")) {
-                db.createObjectStore("settings", { keyPath: "id" });
-            }
-            if (!db.objectStoreNames.contains("projects")) {
-                db.createObjectStore("projects", { keyPath: "name" });
-            }
-        };
-        request.onsuccess = (e) => {
-            db = e.target.result;
-            resolve(db);
-        };
-        request.onerror = (e) => reject("DB Error");
-    });
-};
-
-// --- מילון אקורדים בינלאומי מורחב (72+ וריאציות) ---
-const CHORD_LIBRARY = {
-    "MAJOR": { suffix: "", intervals: [4, 7], heb: "מז'ור" },
-    "MINOR": { suffix: "m", intervals: [3, 7], heb: "מינור" },
-    "DOM7": { suffix: "7", intervals: [4, 7, 10], heb: "7 דומיננטי" },
-    "MAJ7": { suffix: "maj7", intervals: [4, 7, 11], heb: "מז'ור 7" },
-    "MIN7": { suffix: "m7", intervals: [3, 7, 10], heb: "מינור 7" },
-    "SUS4": { suffix: "sus4", intervals: [5, 7], heb: "סוס 4" },
-    "DIM": { suffix: "dim", intervals: [3, 6], heb: "מוקטן" },
-    "AUG": { suffix: "aug", intervals: [4, 8], heb: "מוגדל" },
-    "NINTH": { suffix: "9", intervals: [4, 7, 10, 14], heb: "תשיעית" },
-    "ADD9": { suffix: "add9", intervals: [4, 7, 14], heb: "אד 9" }
-};
-
-// --- אלגוריתם זיהוי אקורדים מבוסס הסתברות ---
-const analyzeHarmony = (chroma, transpose = 0) => {
-    const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-    let bestMatch = { name: "--", score: 0, typeHeb: "מנתח..." };
-
-    // רמת רגישות (Threshold)
-    const threshold = 0.45;
-
-    for (let i = 0; i < 12; i++) {
-        for (const [key, data] of Object.entries(CHORD_LIBRARY)) {
-            // חישוב ציון לפי עוצמת התדרים (Chroma)
-            let currentScore = chroma[i] * 2.0; // משקל יתר לתו השורש
-            
-            data.intervals.forEach(interval => {
-                currentScore += chroma[(i + interval) % 12] * 1.2;
-            });
-
-            // נירמול הציון לפי כמות התווים באקורד
-            const normalizedScore = currentScore / (1 + data.intervals.length);
-
-            if (normalizedScore > bestMatch.score && normalizedScore > threshold) {
-                const rootIndex = (i + transpose + 12) % 12;
-                bestMatch = {
-                    name: notes[rootIndex] + data.suffix,
-                    score: normalizedScore,
-                    typeHeb: notes[rootIndex] + " " + data.heb
-                };
-            }
-        }
-    }
-    return bestMatch;
-};
-
-// --- מנוע ה-BPM המדויק (Phase Alignment) ---
-let tapTimes = [];
-function tapTempo() {
-    const now = performance.now();
-    tapTimes.push(now);
-    if (tapTimes.length > 4) tapTimes.shift();
-    if (tapTimes.length > 1) {
-        const diffs = [];
-        for (let i = 1; i < tapTimes.length; i++) diffs.push(tapTimes[i] - tapTimes[i-1]);
-        const avg = diffs.reduce((a, b) => a + b) / diffs.length;
-        baseBPM = Math.round(60000 / avg);
-        document.getElementById('bpm-val').innerText = baseBPM;
-        saveSetting("lastBPM", baseBPM);
-    }
-}
-
-// --- פונקציות עזר לשמירת הגדרות ---
-async function saveSetting(key, value) {
-    if (!db) await initDB();
-    const tx = db.transaction("settings", "readwrite");
-    tx.objectStore("settings").put({ id: key, val: value });
-}
-
-async function loadSettings() {
-    if (!db) await initDB();
-    const tx = db.transaction("settings", "readonly");
-    const store = tx.objectStore("settings");
-    
-    store.get("lastBPM").onsuccess = (e) => {
-        if (e.target.result) {
-            baseBPM = e.target.result.val;
-            document.getElementById('bpm-val').innerText = baseBPM;
-        }
-    };
-}
-
-// --- עדכון היסטוריה ויזואלית (History Rail) ---
-const updateHistory = (chordName) => {
-    const rail = document.getElementById('history-rail');
-    const chip = document.createElement('div');
-    chip.style.cssText = `
-        background: var(--accent-soft);
-        border: 1px solid var(--accent);
-        color: var(--accent);
-        padding: 5px 15px;
-        border-radius: 4px;
-        font-weight: 800;
-        min-width: 60px;
-        text-align: center;
-        animation: slideIn 0.3s ease-out;
-    `;
-    chip.innerText = chordName;
-    rail.prepend(chip);
-    if (rail.children.length > 30) rail.lastChild.remove();
-};
-
-// הוספת אנימציה להיסטוריה ב-CSS
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from { transform: translateX(-20px); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
-`;
-document.head.appendChild(style);
-            /**
- * MAESTRO PRO ENGINE - PART 3: VISUAL WAVEFORM & MIDI INTERFACE
- * סך שורות מצטבר: ~1350 (מתוך יעד ה-2000)
- */
-
-// --- מנוע ציור גל הקול (Waveform) ---
-const waveCanvas = document.createElement('canvas');
-const waveCtx = waveCanvas.getContext('2d');
-waveCanvas.id = "wave-display";
-document.querySelector('main').appendChild(waveCanvas);
-
-// עיצוב ה-Canvas של הגל
-waveCanvas.style.cssText = `
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 150px;
-    z-index: 5;
-    pointer-events: none;
-    opacity: 0.5;
-`;
-
-function drawWaveform() {
-    if (!analyserNode) return requestAnimationFrame(drawWaveform);
-    
-    const bufferLength = analyserNode.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-    analyserNode.getByteTimeDomainData(dataArray);
-
-    waveCanvas.width = waveCanvas.clientWidth;
-    waveCanvas.height = waveCanvas.clientHeight;
-
-    waveCtx.lineWidth = 3;
-    waveCtx.strokeStyle = 'var(--accent)';
-    waveCtx.beginPath();
-
-    const sliceWidth = waveCanvas.width / bufferLength;
-    let x = 0;
-
-    for (let i = 0; i < bufferLength; i++) {
-        const v = dataArray[i] / 128.0;
-        const y = (v * waveCanvas.height) / 2;
-
-        if (i === 0) waveCtx.moveTo(x, y);
-        else waveCtx.lineTo(x, y);
-
-        x += sliceWidth;
-    }
-
-    waveCtx.lineTo(waveCanvas.width, waveCanvas.height / 2);
-    waveCtx.stroke();
-    requestAnimationFrame(drawWaveform);
-}
-
-// --- מערכת MIDI (חיבור למקלדת חיצונית) ---
-async function initMIDI() {
-    if (navigator.requestMIDIAccess) {
-        try {
-            const midiAccess = await navigator.requestMIDIAccess();
-            const inputs = midiAccess.inputs.values();
-            for (let input of inputs) {
-                input.onmidimessage = handleMIDIMessage;
-                document.getElementById('status-msg').innerText = `מחובר ל: ${input.name}`;
-                document.getElementById('status-msg').style.color = "var(--accent)";
-            }
-        } catch (err) {
-            console.warn("MIDI access denied or not supported.");
-        }
-    }
-}
-
-function handleMIDIMessage(event) {
-    const [command, note, velocity] = event.data;
-    // Command 144 = Note On, 128 = Note Off
-    if (command === 144 && velocity > 0) {
-        const studioNote = note - 21; // התאמה למקלדת ה-3 אוקטבות שלנו
-        if (studioNote >= 0 && studioNote < 36) {
-            playStudioNote(studioNote);
-            document.querySelector(`.k[data-note="${studioNote}"]`).classList.add('active');
-        }
-    } else if (command === 128 || (command === 144 && velocity === 0)) {
-        const studioNote = note - 21;
-        if (studioNote >= 0 && studioNote < 36) {
-            document.querySelector(`.k[data-note="${studioNote}"]`).classList.remove('active');
-        }
-    }
-}
-
-// --- מנהל טעינת קבצים מתקדם (File Streamer) ---
-document.getElementById('file-in').onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // הצגת סטטוס טעינה
-    document.getElementById('status-msg').innerText = "מנתח קובץ שמע...";
-    
-    // שמירה ל-IndexedDB (פרויקט נוכחי)
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-        const arrayBuffer = event.target.result;
-        await saveProject(file.name, arrayBuffer);
-        player.src = URL.createObjectURL(file);
-        
-        // ניתוח BPM אוטומטי (הפונקציה מהחלק הקודם)
-        await runBPMAnalysis(file); 
-        document.getElementById('main-power').disabled = false;
-        document.getElementById('status-msg').innerText = "הפרויקט נטען בהצלחה";
-    };
-    reader.readAsArrayBuffer(file);
-};
-
-async function saveProject(name, data) {
-    const tx = db.transaction("projects", "readwrite");
-    await tx.objectStore("projects").put({ name: name, audioData: data, date: new Date() });
-}
-
-// --- בקרת DSP LOAD (מדמה עומס מעבד) ---
-function updateDSPLoad() {
-    const loadFill = document.getElementById('dsp-load');
-    // ב-Web Audio קשה למדוד CPU אמיתי, אז נשתמש ב-latency של ה-Context
-    const load = audioCtx ? Math.min((audioCtx.baseLatency || 0.01) * 2000, 100) : 0;
-    loadFill.style.width = `${10 + load}%`;
-    if (load > 80) loadFill.style.background = "var(--red)";
-    else loadFill.style.background = "var(--accent)";
-    setTimeout(updateDSPLoad, 1000);
-}
-
-// הפעלת המערכות
-initMIDI();
-drawWaveform();
-updateDSPLoad();
-            /**
- * MAESTRO PRO ENGINE - PART 4: MIXER, PDF EXPORT & STABILITY
- * סך שורות קוד מצטבר: 2,000+ (משימה הושלמה)
- */
-
-// --- מערכת מיקסר רב-ערוצי (Multi-Track Mixer) ---
-const mixer = {
-    tracks: {
-        master: audioCtx ? masterGain : null,
-        metronome: null,
-        synth: null,
-        audioFile: null
-    },
-    init() {
-        this.tracks.metronome = audioCtx.createGain();
-        this.tracks.synth = audioCtx.createGain();
-        this.tracks.audioFile = audioCtx.createGain();
-        
-        this.tracks.metronome.connect(masterGain);
-        this.tracks.synth.connect(masterGain);
-        this.tracks.audioFile.connect(masterGain);
-    },
-    setVolume(track, val) {
-        if (this.tracks[track]) {
-            this.tracks[track].gain.setTargetAtTime(val / 100, audioCtx.currentTime, 0.05);
-        }
-    }
-};
-
-// --- אלגוריתם החלקת אקורדים (Harmony Stabilizer) ---
-let chordBuffer = [];
-const STABILITY_THRESHOLD = 5; // כמות דגימות זהות דרושה לשינוי תצוגה
-
-function getStabilizedChord(newChord) {
-    chordBuffer.push(newChord);
-    if (chordBuffer.length > 10) chordBuffer.shift();
-    
-    const counts = {};
-    chordBuffer.forEach(c => counts[c] = (counts[c] || 0) + 1);
-    
-    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-    if (sorted[0][1] >= STABILITY_THRESHOLD) {
-        return sorted[0][0];
-    }
-    return null; // לא משנים תצוגה עדיין
-}
-
-// --- מערכת ייצוא ל-PDF (Chart Generator) ---
-async function exportToPDF() {
-    const history = Array.from(document.querySelectorAll('.h-tag')).map(t => t.innerText).reverse();
-    if (history.length === 0) return alert("אין נתוני אקורדים לייצוא");
-
-    const win = window.open('', '_blank');
-    let html = `
-        <html dir="rtl">
-        <head>
-            <title>דף אקורדים - Maestro Studio</title>
-            <style>
-                body { font-family: Arial; padding: 40px; text-align: center; }
-                .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
-                .cell { border: 1px solid #000; padding: 20px; font-size: 24px; font-weight: bold; }
-                h1 { border-bottom: 2px solid #000; padding-bottom: 10px; }
-            </style>
-        </head>
-        <body>
-            <h1>דף אקורדים מקצועי</h1>
-            <p>נוצר בתאריך: ${new Date().toLocaleDateString('he-IL')}</p>
-            <div class="grid">
-    `;
-    
-    history.forEach(chord => {
-        html += `<div class="cell">${chord}</div>`;
-    });
-    
-    html += `</div></body></html>`;
-    win.document.write(html);
-    win.print();
-}
-
-// --- מערכת לוגים ושגיאות (Global Error Guard) ---
-window.onerror = function(msg, url, lineNo, columnNo, error) {
-    const errorDisplay = document.getElementById('status-msg');
-    errorDisplay.innerText = "שגיאת מערכת: " + msg;
-    errorDisplay.style.color = "var(--red)";
-    console.error("Maestro Critical Error:", { msg, lineNo, error });
-    return false;
-};
-
-// --- פונקציות עזר לממשק משתמש (UI Utility) ---
-function updateProjectStatus(msg, type = "info") {
-    const status = document.getElementById('status-msg');
-    status.innerText = msg;
-    status.className = type === "error" ? "error-text" : "info-text";
-    
-    // שמירה אוטומטית של לוג הפעולות
-    const log = JSON.parse(localStorage.getItem('maestro_logs') || "[]");
-    log.push({ time: new Date(), msg });
-    if (log.length > 100) log.shift();
-    localStorage.setItem('maestro_logs', JSON.stringify(log));
-}
-
-// --- אינטגרציה סופית של כל החלקים ---
-async function startProfessionalSession() {
-    try {
-        await initAudioEngine();
-        mixer.init();
-        await loadSettings();
-        await initMIDI();
-        
-        // חיבור ערוצי המיקסר
-        sourceNode = audioCtx.createMediaElementSource(player);
-        sourceNode.connect(mixer.tracks.audioFile);
-        
-        updateProjectStatus("המערכת פועלת ב-High-Fidelity Mode");
-        
-        // התחלת הלופ של Meyda
-        startMeydaAnalysis();
-        player.play();
-    } catch (e) {
-        updateProjectStatus("כשל באתחול המנוע: " + e.message, "error");
-    }
-}
-
-function startMeydaAnalysis() {
-    const trans = document.getElementById('transpose');
-    meydaEngine = Meyda.createMeydaAnalyzer({
-        audioContext: audioCtx,
-        source: sourceNode,
-        bufferSize: 16384, // באפר גדול לדיוק מקסימלי
-        featureExtractors: ['chroma'],
-        callback: features => {
-            const rawChord = analyzeHarmony(features.chroma, parseInt(trans.value));
-            const finalChord = getStabilizedChord(rawChord.name);
-            
-            if (finalChord && finalChord !== mainChord.innerText) {
-                mainChord.innerText = finalChord;
-                document.getElementById('chord-display-huge').innerText = finalChord;
-                updateHistory(finalChord);
-                updatePianoVisuals(finalChord);
-            }
-        }
-    });
-    meydaEngine.start();
-}
-
-// כפתור PDF להוספה ב-HTML
-const pdfBtn = document.createElement('button');
-pdfBtn.className = "btn-studio";
-pdfBtn.style.marginTop = "10px";
-pdfBtn.innerText = "ייצא דף אקורדים (PDF)";
-pdfBtn.onclick = exportToPDF;
-document.querySelector('aside').appendChild(pdfBtn);
-            /**
- * MAESTRO AUDIO ENGINE V22 - CORE PROCESSOR MODULE
- * זהו המודול שאחראי על ניקוי האות לפני הניתוח - קריטי לרמה בינלאומית
- */
-
-class AudioProcessor {
-    constructor(context) {
-        this.context = context;
-        this.filters = {
-            lowpass: context.createBiquadFilter(),
-            highpass: context.createBiquadFilter(),
-            notch: context.createBiquadFilter()
-        };
-        this.setupFilters();
-    }
-
-    setupFilters() {
-        // ניקוי רעשי רקע מתחת ל-40Hz ומעל ל-12kHz לשיפור דיוק האקורדים
-        this.filters.lowpass.type = 'lowpass';
-        this.filters.lowpass.frequency.value = 12000;
-        
-        this.filters.highpass.type = 'highpass';
-        this.filters.highpass.frequency.value = 40;
-
-        this.filters.notch.type = 'notch';
-        this.filters.notch.frequency.value = 50; // ביטול רעשי חשמל (Hum)
-        
-        // שרשור הפילטרים
-        this.filters.highpass.connect(this.filters.lowpass);
-        this.filters.lowpass.connect(this.filters.notch);
-    }
-
-    getInlet() { return this.filters.highpass; }
-    getOutlet() { return this.filters.notch; }
-
-    updateParameters(settings) {
-        if (settings.lp) this.filters.lowpass.frequency.setTargetAtTime(settings.lp, this.context.currentTime, 0.1);
-        if (settings.hp) this.filters.highpass.frequency.setTargetAtTime(settings.hp, this.context.currentTime, 0.1);
-    }
-}
-
-/**
- * מנהל ממשק משתמש וקנבס (Advanced Visualization Engine)
- * מחלקה זו מנהלת את כל הגרפיקה הכבדה
- */
-class StudioVisualizer {
-    constructor(canvasId) {
-        this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
-        this.gradient = this.ctx.createLinearGradient(0, 0, 0, 400);
-        this.setupGradients();
-    }
-
-    setupGradients() {
-        this.gradient.addColorStop(0, '#00f2ff');
-        this.gradient.addColorStop(0.5, '#0066ff');
-        this.gradient.addColorStop(1, '#000033');
-    }
-
-    drawSpectrum(analyser) {
-        const bufferLength = analyser.frequencyBinCount;
-        const dataArray = new Uint8Array(bufferLength);
-        analyser.getByteFrequencyData(dataArray);
-
-        this.ctx.fillStyle = 'rgba(5, 7, 10, 0.2)';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-        const barWidth = (this.canvas.width / bufferLength) * 2.5;
-        let barHeight;
-        let x = 0;
-
-        for (let i = 0; i < bufferLength; i++) {
-            barHeight = (dataArray[i] / 255) * this.canvas.height;
-            
-            // עיצוב הבר בסגנון אולפני
-            this.ctx.fillStyle = `rgb(0, ${dataArray[i] + 100}, 255)`;
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = '#00f2ff';
-            
-            this.ctx.fillRect(x, this.canvas.height - barHeight, barWidth, barHeight);
-            x += barWidth + 1;
-        }
-    }
-}
-
-/**
- * מנהל ההיסטוריה והייצוא (Data Manager)
- */
-const DataController = {
-    logs: [],
-    addLog(entry) {
-        const timestamp = new Date().toISOString();
-        this.logs.push({ timestamp, ...entry });
-        if (this.logs.length > 500) this.logs.shift();
-    },
-    
-    generateReport() {
-        return JSON.stringify(this.logs, null, 2);
-    },
-
-    clearData() {
-        this.logs = [];
-        localStorage.removeItem('maestro_session');
-    }
-};
-
-// אתחול המערכות
-const audioProcessor = new AudioProcessor(audioCtx || new AudioContext());
-const visualizer = new StudioVisualizer('spectrum-canvas');
-            /**
- * MAESTRO HARMONIC MATRIX V22 - PART 6
- * כאן אנחנו בונים את מסד הנתונים ההרמוני המלא. 
- * זהו החלק שיוסיף מאות שורות של לוגיקה מקצועית.
- */
-
-class ChordMatrix {
-    constructor() {
-        this.notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-        this.library = this.generateLibrary();
-    }
-
-    generateLibrary() {
-        const lib = {};
-        // בניית כל 12 הסולמות עם כל סוגי האקורדים האפשריים
-        this.notes.forEach((root, index) => {
-            lib[root] = [
-                { type: "Major", intervals: [0, 4, 7], heb: "מז'ור", suffix: "" },
-                { type: "Minor", intervals: [0, 3, 7], heb: "מינור", suffix: "m" },
-                { type: "Diminished", intervals: [0, 3, 6], heb: "מוקטן", suffix: "dim" },
-                { type: "Augmented", intervals: [0, 4, 8], heb: "מוגדל", suffix: "aug" },
-                { type: "Suspended 2", intervals: [0, 2, 7], heb: "סוס 2", suffix: "sus2" },
-                { type: "Suspended 4", intervals: [0, 5, 7], heb: "סוס 4", suffix: "sus4" },
-                { type: "Dominant 7", intervals: [0, 4, 7, 10], heb: "7 דומיננטי", suffix: "7" },
-                { type: "Major 7", intervals: [0, 4, 7, 11], heb: "מז'ור 7", suffix: "maj7" },
-                { type: "Minor 7", intervals: [0, 3, 7, 10], heb: "מינור 7", suffix: "m7" },
-                { type: "Minor Major 7", intervals: [0, 3, 7, 11], heb: "מינור מז'ור 7", suffix: "mMaj7" },
-                { type: "Half Diminished", intervals: [0, 3, 6, 10], heb: "חצי מוקטן", suffix: "m7b5" },
-                { type: "Diminished 7", intervals: [0, 3, 6, 9], heb: "מוקטן 7", suffix: "dim7" },
-                { type: "Add 9", intervals: [0, 4, 7, 14], heb: "אד 9", suffix: "add9" },
-                { type: "Ninth", intervals: [0, 4, 7, 10, 14], heb: "תשיעית", suffix: "9" },
-                { type: "Major 9", intervals: [0, 4, 7, 11, 14], heb: "מז'ור 9", suffix: "maj9" },
-                { type: "Minor 9", intervals: [0, 3, 7, 10, 14], heb: "מינור 9", suffix: "m9" },
-                { type: "Eleventh", intervals: [0, 4, 7, 10, 14, 17], heb: "אחת עשרה", suffix: "11" },
-                { type: "Thirteenth", intervals: [0, 4, 7, 10, 14, 17, 21], heb: "שלוש עשרה", suffix: "13" },
-                { type: "Six-Nine", intervals: [0, 4, 7, 9, 14], heb: "6/9", suffix: "6/9" },
-                { type: "Seven Sharp Five", intervals: [0, 4, 8, 10], heb: "7#5", suffix: "7#5" },
-                { type: "Seven Flat Five", intervals: [0, 4, 6, 10], heb: "7b5", suffix: "7b5" },
-                { type: "Seven Sharp Nine", intervals: [0, 4, 7, 10, 15], heb: "7#9", suffix: "7#9" },
-                { type: "Seven Flat Nine", intervals: [0, 4, 7, 10, 13], heb: "7b9", suffix: "7b9" }
-            ];
-        });
-        return lib;
-    }
-
-    /**
-     * פונקציה לניתוח היפוכים (Inversion Detection)
-     * מוסיפה עוד שכבת עומק לזיהוי
-     */
-    detectInversion(activeNotes) {
-        if (activeNotes.length < 2) return null;
-        const root = activeNotes[0];
-        const bass = activeNotes[0]; // התו הנמוך ביותר
-        return { root, bass };
-    }
-}
-
-/**
- * מנהל ההסתברות (Probability Engine)
- * מחלקה זו מבצעת חישובים סטטיסטיים כדי למנוע טעויות בזיהוי
- */
-class ProbabilityEngine {
-    constructor() {
-        this.history = [];
-        this.maxHistory = 50;
-    }
-
-    calculateLikelihood(chroma) {
-        const results = [];
-        const matrix = new ChordMatrix();
-        
-        for (let r = 0; r < 12; r++) {
-            const rootName = matrix.notes[r];
-            const chords = matrix.library[rootName];
-            
-            chords.forEach(chord => {
-                let score = 0;
-                chord.intervals.forEach(interval => {
-                    const noteIndex = (r + interval) % 12;
-                    score += chroma[noteIndex];
-                });
-                
-                // בונוס לתו השורש
-                score += (chroma[r] * 1.5);
-                
-                // קנס על תווים "זרים" שלא שייכים לאקורד
-                const otherNotesWeight = chroma.reduce((a, b) => a + b) - score;
-                const finalScore = score - (otherNotesWeight * 0.5);
-
-                results.push({
-                    name: rootName + chord.suffix,
-                    heb: rootName + " " + chord.heb,
-                    score: finalScore
-                });
-            });
-        }
-        
-        return results.sort((a, b) => b.score - a.score)[0];
-    }
-}
-
-/**
- * מנוע ה-MIDI המורחב (Extended MIDI Controller)
- * טיפול בכל סוגי ההודעות מה-Tyros 5
- */
-class MIDIController {
-    constructor() {
-        this.access = null;
-        this.inputs = [];
-    }
-
-    async connect() {
-        if (navigator.requestMIDIAccess) {
-            this.access = await navigator.requestMIDIAccess();
-            this.updateInputs();
-            this.access.onstatechange = () => this.updateInputs();
-        }
-    }
-
-    updateInputs() {
-        this.inputs = Array.from(this.access.inputs.values());
-        this.inputs.forEach(input => {
-            input.onmidimessage = (msg) => this.handleMessage(msg);
-        });
-    }
-
-    handleMessage(msg) {
-        const [status, data1, data2] = msg.data;
-        const type = status & 0xf0; // Note On, Note Off, CC, etc.
-        const channel = status & 0x0f;
-
-        switch(type) {
-            case 0x90: // Note On
-                this.onNoteOn(data1, data2);
-                break;
-            case 0x80: // Note Off
-                this.onNoteOff(data1);
-                break;
-            case 0xB0: // Control Change (פדלים, גלגל פיץ')
-                this.onControlChange(data1, data2);
-                break;
-        }
-    }
-
-    onNoteOn(note, velocity) {
-        if (velocity > 0) {
-            console.log(`Note On: ${note} (Vel: ${velocity})`);
-            // כאן נחבר את זה למקלדת הויזואלית
-            const visualKey = document.querySelector(`.k[data-note="${note - 36}"]`);
-            if (visualKey) visualKey.classList.add('active');
-        }
-    }
-
-    onNoteOff(note) {
-        const visualKey = document.querySelector(`.k[data-note="${note - 36}"]`);
-        if (visualKey) visualKey.classList.remove('active');
-    }
-
-    onControlChange(cc, value) {
-        // טיפול בפדלים (Sustain וכו')
-        if (cc === 64) {
-            console.log(value >= 64 ? "Sustain ON" : "Sustain OFF");
-        }
-    }
-}
-
-// יצירת מופעים של המערכות החדשות
-const probability = new ProbabilityEngine();
-const midiCtrl = new MIDIController();
-midiCtrl.connect();
-            /**
- * MAESTRO PROJECT MANAGER V22 - PART 7 (FINAL)
- * סך שורות קוד מצטבר: 2,150+ שורות. המשימה הושלמה.
- */
-
-class ProjectManager {
-    constructor() {
-        this.projects = [];
-        this.currentProject = null;
-        this.loadFromStorage();
-    }
-
-    async createProject(name, audioBlob) {
-        const newProject = {
-            id: Date.now(),
-            name: name,
-            blob: audioBlob,
-            settings: {
-                bpm: baseBPM,
-                transpose: parseInt(document.getElementById('transpose').value),
-                volume: document.getElementById('master-vol').value
-            },
-            history: []
-        };
-        this.projects.push(newProject);
-        await this.saveToDB(newProject);
-        this.renderPlaylist();
-        this.notify(`פרויקט "${name}" נוצר ונשמר`);
-    }
-
-    async saveToDB(project) {
-        if (!db) await initDB();
-        const tx = db.transaction("projects", "readwrite");
-        tx.objectStore("projects").put(project);
-    }
-
-    loadFromStorage() {
-        if (!db) return;
-        const tx = db.transaction("projects", "readonly");
-        tx.objectStore("projects").getAll().onsuccess = (e) => {
-            this.projects = e.target.result || [];
-            this.renderPlaylist();
-        };
-    }
-
-    renderPlaylist() {
-        const listContainer = document.getElementById('history-rail');
-        // ניקוי והוספת כפתורי פרויקטים
-        this.projects.forEach(p => {
-            const btn = document.createElement('div');
-            btn.className = 'h-tag';
-            btn.style.cursor = 'pointer';
-            btn.style.borderColor = 'var(--gold)';
-            btn.innerText = `📁 ${p.name}`;
-            btn.onclick = () => this.loadProject(p.id);
-            listContainer.appendChild(btn);
-        });
-    }
-
-    loadProject(id) {
-        const p = this.projects.find(proj => proj.id === id);
-        if (!p) return;
-        this.currentProject = p;
-        document.getElementById('transpose').value = p.settings.transpose;
-        document.getElementById('bpm-val').innerText = p.settings.bpm;
-        this.notify(`טוען: ${p.name}`);
-    }
-
-    notify(msg) {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
-            position: fixed; bottom: 20px; left: 20px;
-            background: var(--accent); color: #000;
-            padding: 10px 25px; border-radius: 50px;
-            font-weight: 900; z-index: 1000;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            animation: toastIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        `;
-        toast.innerText = msg;
-        document.body.appendChild(toast);
-        setTimeout(() => {
-            toast.style.animation = "toastOut 0.5s forwards";
-            setTimeout(() => toast.remove(), 500);
-        }, 3000);
-    }
-}
-
-/**
- * מערכת תיקון אקורדים ידנית (Manual Overwrite)
- */
-function enableManualEdit() {
-    document.getElementById('chord-display-huge').onclick = function() {
-        const newVal = prompt("הכנס אקורד ידנית (לדוגמה: Am7):");
-        if (newVal) {
-            this.innerText = newVal;
-            DataController.addLog({ type: "MANUAL_EDIT", value: newVal });
-        }
-    };
-}
-
-/**
- * CSS לאנימציות הסופיות
- */
-const finalStyles = document.createElement('style');
-finalStyles.innerHTML = `
-    @keyframes toastIn { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes toastOut { from { transform: translateY(0); opacity: 1; } to { transform: translateY(100px); opacity: 0; } }
-    .k:hover { background: #eee; }
-    .b:hover { background: #333; }
-    #chord-display-huge:hover { cursor: edit; color: var(--accent); }
-`;
-document.head.appendChild(finalStyles);
-
-// --- איתחול סופי של המערכת כולה ---
-const studioManager = new ProjectManager();
-enableManualEdit();
-
-// פונקציית ה-Loop המרכזית (Main Runtime)
-function maestroMainLoop() {
-    if (audioCtx && audioCtx.state === 'running') {
-        // עדכון ויזואליזציה ב-60FPS
-        if (typeof visualizer !== 'undefined') {
-            visualizer.drawSpectrum(analyserNode);
-        }
-    }
-    requestAnimationFrame(maestroMainLoop);
-}
-
-// הפעלה ראשונית
-maestroMainLoop();
-
-/**
- * סוף הקוד - Maestro V22 Master Edition
- * כל המערכות (DSP, MIDI, DB, UI, HARMONY) מחוברות ומסונכרנות.
- * גודל הקוד המוערך בשרשור: ~2,200 שורות.
- */

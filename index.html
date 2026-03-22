@@ -3,180 +3,199 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAESTRO v30 PRO</title>
-
+<title>MAESTRO PRO AI</title>
 <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
 
 <style>
-body {
-  margin:0;
-  display:grid;
-  grid-template-columns:300px 1fr;
-  height:100vh;
-  font-family:sans-serif;
-  background:#0b0f14;
-  color:#fff;
+:root{
+--bg:#05070a;--panel:#0d1117;--accent:#00f2ff;
+--gold:#ffcc00;--red:#ff3e3e;--border:#30363d;
+--text:#e6edf3;
 }
-aside {
-  padding:20px;
-  background:#111;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+body{margin:0;background:#000;color:#fff;font-family:sans-serif;display:flex;height:100vh}
+aside{width:320px;background:#111;padding:15px;display:flex;flex-direction:column;gap:10px}
+main{flex:1;display:flex;flex-direction:column}
+
+#chord-main{
+font-size:120px;
+font-weight:900;
+text-align:center;
+color:var(--gold);
+transition:all .25s,opacity .2s;
 }
-button {
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  cursor:pointer;
-}
-canvas {
-  width:100%;
-  height:100%;
-}
+
+.player-bar{padding:10px;background:#111;text-align:center}
+button{padding:10px;margin:5px;border:none;background:#00f2ff;color:#000;font-weight:bold;cursor:pointer}
+
+.key{width:40px;height:120px;background:white;border:1px solid #000;display:inline-block}
+.key.active{background:red}
+
 </style>
 </head>
 
 <body>
 
 <aside>
-  <h2>MAESTRO v30 PRO</h2>
 
-  <button onclick="loadFile()">🎧 טען קובץ</button>
-  <input type="file" id="file" hidden accept="audio/*">
+<button onclick="document.getElementById('audio').click()">טען שיר</button>
+<input type="file" id="audio" accept="audio/*" hidden>
 
-  <button onclick="togglePlay()">▶ נגן / עצור</button>
-  <button onclick="startVoice()">🎙️ פקודות קוליות</button>
+<div>BPM: <span id="bpm">---</span></div>
+<div>KEY: <span id="key">---</span></div>
 
-  <div>BPM: <span id="bpm">---</span></div>
+<button onclick="toggleAI()">AI BOOST</button>
+<button onclick="autoTranspose()">AUTO KEY</button>
+
 </aside>
 
 <main>
-  <canvas id="wave"></canvas>
+
+<div id="chord-main">--</div>
+
+<div class="player-bar">
+<button onclick="togglePlay()">▶</button>
+</div>
+
+<div id="piano"></div>
+
 </main>
 
 <script>
-const state = {
-  ctx: null,
-  buffer: null,
-  source: null,
-  isPlaying: false,
-  startTime: 0,
-  offset: 0
-};
 
-// ========= LOAD =========
-function loadFile() {
-  document.getElementById("file").click();
+let ctx,src,meyda;
+let player=new Audio();
+let currentBPM=120;
+let aiBoost=false;
+let smoothed=new Array(12).fill(0.1);
+
+const notes=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+
+const chords=[
+{n:"",p:[0,4,7]},
+{n:"m",p:[0,3,7]},
+{n:"7",p:[0,4,10]},
+{n:"dim",p:[0,3,6]},
+{n:"aug",p:[0,4,8]}
+];
+
+document.getElementById("audio").onchange=async e=>{
+player.src=URL.createObjectURL(e.target.files[0]);
 }
 
-file.onchange = async e => {
-  const f = e.target.files[0];
-  if (!f) return;
-
-  state.ctx = new AudioContext();
-  const data = await f.arrayBuffer();
-  state.buffer = await state.ctx.decodeAudioData(data);
-
-  drawWave(state.buffer);
-  detectBPM(state.buffer);
-};
-
-// ========= PLAY =========
-function createSource() {
-  const src = state.ctx.createBufferSource();
-  src.buffer = state.buffer;
-  src.connect(state.ctx.destination);
-  return src;
+function init(){
+ctx=new AudioContext();
+src=ctx.createMediaElementSource(player);
+meyda=Meyda.createMeydaAnalyzer({
+audioContext:ctx,
+source:src,
+bufferSize:8192,
+featureExtractors:["chroma"],
+callback:analyze
+});
+meyda.start();
 }
 
-function togglePlay() {
-  if (!state.buffer) return;
-
-  if (!state.isPlaying) {
-    state.source = createSource();
-    state.source.start(0, state.offset);
-    state.startTime = state.ctx.currentTime;
-    state.isPlaying = true;
-
-    state.source.onended = () => {
-      state.isPlaying = false;
-      state.offset = 0;
-    };
-  } else {
-    state.source.stop();
-    state.offset += state.ctx.currentTime - state.startTime;
-    state.isPlaying = false;
-  }
+function togglePlay(){
+if(!ctx) init();
+player.paused?player.play():player.pause();
 }
 
-// ========= WAVE =========
-function drawWave(buffer) {
-  const canvas = document.getElementById("wave");
-  const ctx = canvas.getContext("2d");
-
-  canvas.width = canvas.offsetWidth;
-  canvas.height = canvas.offsetHeight;
-
-  const data = buffer.getChannelData(0);
-  const step = Math.ceil(data.length / canvas.width);
-
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  for (let i=0;i<canvas.width;i++){
-    let min=1,max=-1;
-    for (let j=0;j<step;j++){
-      const val = data[(i*step)+j];
-      if(val<min)min=val;
-      if(val>max)max=val;
-    }
-    ctx.fillRect(i,(1+min)*canvas.height/2,1,(max-min)*canvas.height/2);
-  }
+function toggleAI(){
+aiBoost=!aiBoost;
 }
 
-// ========= BPM =========
-function detectBPM(buffer) {
-  const data = buffer.getChannelData(0);
+function analyze(f){
 
-  let peaks = [];
-  for (let i=0;i<data.length;i+=10000){
-    if (data[i] > 0.9) peaks.push(i);
-  }
+let chroma=[...f.chroma];
 
-  let intervals = [];
-  for (let i=1;i<peaks.length;i++){
-    intervals.push(peaks[i]-peaks[i-1]);
-  }
-
-  let avg = intervals.reduce((a,b)=>a+b,0)/intervals.length;
-  let bpm = 60 / (avg / buffer.sampleRate);
-
-  document.getElementById("bpm").textContent = Math.round(bpm) || "---";
+if(aiBoost){
+for(let i=0;i<12;i++){
+smoothed[i]=smoothed[i]*0.9+chroma[i]*0.1;
+smoothed[i]=Math.pow(smoothed[i],1.5);
+}
+chroma=smoothed;
 }
 
-// ========= VOICE =========
-function startVoice() {
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
+let best={score:0,name:"--"};
+let second={score:0};
 
-  if (!SpeechRecognition) {
-    alert("אין תמיכה בדפדפן");
-    return;
-  }
+for(let r=0;r<12;r++){
+chords.forEach(c=>{
+let score=chroma[r]*1.2;
+c.p.forEach(i=>{
+score+=chroma[(r+i)%12];
+});
 
-  const rec = new SpeechRecognition();
-  rec.lang = "he-IL";
-
-  rec.onresult = e => {
-    const text = e.results[0][0].transcript;
-    console.log("🎙️", text);
-
-    if (text.includes("נגן")) togglePlay();
-    if (text.includes("עצור")) togglePlay();
-  };
-
-  rec.start();
+if(score>best.score){
+second=best;
+best={score,name:notes[r]+c.n};
 }
+else if(score>second.score){
+second={score};
+}
+});
+}
+
+let confidence=best.score/(second.score+0.001);
+if(confidence<1.15) return;
+
+// bass
+let bass=chroma.indexOf(Math.max(...chroma));
+if(bass!==notes.indexOf(best.name[0])){
+best.name+="/"+notes[bass];
+}
+
+updateUI(best);
+detectKey(chroma);
+
+}
+
+function updateUI(best){
+let el=document.getElementById("chord-main");
+if(el.innerText===best.name)return;
+
+el.style.opacity=0;
+setTimeout(()=>{
+el.innerText=best.name;
+el.style.opacity=1;
+},80);
+
+updatePiano(best.name);
+}
+
+function updatePiano(ch){
+document.querySelectorAll(".key").forEach(k=>k.classList.remove("active"));
+
+let root=notes.indexOf(ch[0]);
+
+[0,4,7].forEach(i=>{
+let n=(root+i)%12;
+document.querySelectorAll(".key").forEach(k=>{
+if(k.dataset.note%12==n)k.classList.add("active");
+});
+});
+}
+
+function detectKey(chroma){
+let max=chroma.indexOf(Math.max(...chroma));
+document.getElementById("key").innerText=notes[max];
+}
+
+function autoTranspose(){
+let k=document.getElementById("key").innerText;
+let idx=notes.indexOf(k);
+alert("Transpose: "+(-idx));
+}
+
+// piano
+let p=document.getElementById("piano");
+for(let i=0;i<24;i++){
+let k=document.createElement("div");
+k.className="key";
+k.dataset.note=i;
+p.appendChild(k);
+}
+
 </script>
 
 </body>

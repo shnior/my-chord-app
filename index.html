@@ -2,29 +2,32 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>Chord Studio Pro - Beat Lock Edition</title>
+    <title>Chord Studio Pro - Stable Edition</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
         :root { --bg: #0d1117; --text: #c9d1d9; --accent: #f43f5e; }
-        body { font-family: system-ui, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; text-align: center; }
-        .container { max-width: 1000px; margin: 0 auto; background: #161b22; padding: 25px; border-radius: 20px; border: 1px solid #30363d; }
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 10px; text-align: center; }
+        .container { max-width: 1000px; margin: 0 auto; background: #161b22; padding: 25px; border-radius: 20px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         
-        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; margin-bottom: 20px; }
         .group { display: flex; flex-direction: column; gap: 4px; }
-        label { font-size: 10px; color: #8b949e; font-weight: bold; }
+        label { font-size: 11px; color: #8b949e; font-weight: bold; }
         input, select { background: #0d1117; color: #58a6ff; border: 1px solid #30363d; padding: 8px; border-radius: 6px; text-align: center; }
 
-        #main-display { background: #010409; border-radius: 15px; border: 1px solid #30363d; padding: 40px 0; margin-bottom: 20px; min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #current-chord { font-size: 9em; font-weight: 900; color: #f2cc60; margin: 0; line-height: 1; }
-        #beat-indicator { font-size: 1.5em; color: #238636; margin-top: 10px; font-weight: bold; }
+        #main-display { background: #010409; border-radius: 15px; border: 1px solid #30363d; padding: 40px 0; margin-bottom: 20px; min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        #current-chord { font-size: 10em; font-weight: 900; color: #f2cc60; margin: 0; line-height: 1; text-shadow: 0 0 30px rgba(242, 204, 96, 0.3); }
+        #beat-indicator { font-size: 1.8em; color: #238636; margin-top: 15px; font-family: monospace; }
 
-        .piano { display: flex; justify-content: center; position: relative; height: 160px; margin: 0 auto; background: #000; padding: 5px; border-radius: 8px; direction: ltr; } /* כיוון משמאל לימין */
-        .key { width: 40px; height: 150px; border: 1px solid #111; background: white; border-radius: 0 0 5px 5px; cursor: pointer; }
-        .key.black { width: 26px; height: 95px; background: #222; margin-left: -13px; margin-right: -13px; z-index: 2; border-radius: 0 0 3px 3px; }
-        .key.active { background: var(--accent) !important; box-shadow: 0 0 15px var(--accent); }
+        /* פסנתר מתוקן - משמאל לימין */
+        .piano-outer { overflow-x: auto; padding: 15px 0; }
+        .piano { display: flex; justify-content: center; position: relative; height: 160px; width: fit-content; margin: 0 auto; background: #000; padding: 8px; border-radius: 10px; direction: ltr; }
+        .key { width: 42px; height: 150px; border: 1px solid #111; background: white; border-radius: 0 0 5px 5px; position: relative; cursor: pointer; transition: 0.1s; }
+        .key.black { width: 28px; height: 95px; background: #222; margin-left: -14px; margin-right: -14px; z-index: 2; border-radius: 0 0 3px 3px; }
+        .key.active { background: var(--accent) !important; box-shadow: 0 0 20px var(--accent); transform: translateY(2px); }
 
-        #start-btn { background: #238636; color: white; border: none; padding: 15px; font-size: 1.2em; border-radius: 10px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
-        .btn-secondary { background: #30363d; color: white; padding: 8px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 10px; }
+        #start-btn { background: #238636; color: white; border: none; padding: 18px; font-size: 1.3em; border-radius: 12px; cursor: pointer; width: 100%; font-weight: bold; margin-bottom: 10px; }
+        #start-btn:hover { background: #2ea043; }
+        .btn-secondary { background: #30363d; color: #c9d1d9; padding: 10px; border: 1px solid #444; border-radius: 8px; cursor: pointer; margin-bottom: 15px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -39,9 +42,9 @@
         <div class="group"><label>ווליום קליק</label><input type="range" id="clickVol" min="0" max="100" value="30"></div>
     </div>
 
-    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 15px;">
-    <button id="start-btn" disabled>הפעל ניתוח + מטרונום</button>
-    <button class="btn-secondary" id="toggleClick">🔊 השמע קליק: כבוי</button>
+    <input type="file" id="fileInput" accept="audio/*" style="margin-bottom: 15px; color: #8b949e;">
+    <button id="start-btn" disabled>הפעל מערכת - Start Engine</button>
+    <button class="btn-secondary" id="toggleClick">🔊 מטרונום: כבוי</button>
     <audio id="audio" controls style="width:100%"></audio>
 
     <div id="main-display">
@@ -49,7 +52,9 @@
         <div id="beat-indicator">BEAT: 1</div>
     </div>
 
-    <div class="piano" id="piano"></div>
+    <div class="piano-outer">
+        <div class="piano" id="piano"></div>
+    </div>
 </div>
 
 <script>
@@ -57,71 +62,83 @@
     const piano = document.getElementById('piano'), beatDisp = document.getElementById('beat-indicator');
     let ctx, source, analyzer, clickEnabled = false;
 
-    // בניית מקלדת (משמאל לימין - נמוך לגבוה)
+    // בניית מקלדת 2 אוקטבות (נמוך בשמאל, גבוה בימין)
     const pattern = [0,1,0,1,0,0,1,0,1,0,1,0];
     for(let i=0; i<24; i++) {
         const isBlack = pattern[i % 12] === 1;
         const key = document.createElement('div');
         key.className = `key ${isBlack ? 'black' : ''}`;
         key.dataset.note = i;
-        key.onmousedown = () => playSynth(i);
+        key.onmousedown = (e) => { e.preventDefault(); playSynth(i); };
         piano.appendChild(key);
     }
 
+    // סינתיסייזר פנימי לבדיקה
     function playSynth(index) {
-        if (!ctx) return;
+        if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = ctx.createOscillator();
         const g = ctx.createGain();
-        osc.frequency.value = 261.63 * Math.pow(2, index/12);
-        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.5);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(261.63 * Math.pow(2, index/12), ctx.currentTime);
+        g.gain.setValueAtTime(0.2, ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
         osc.connect(g).connect(ctx.destination);
-        osc.start(); osc.stop(ctx.currentTime + 0.5);
+        osc.start(); osc.stop(ctx.currentTime + 0.6);
     }
 
     document.getElementById('toggleClick').onclick = (e) => {
         clickEnabled = !clickEnabled;
-        e.target.innerText = clickEnabled ? "🔊 השמע קליק: פעיל" : "🔊 השמע קליק: כבוי";
+        e.target.innerText = clickEnabled ? "🔊 מטרונום: פעיל" : "🔊 מטרונום: כבוי";
+        e.target.style.borderColor = clickEnabled ? "#238636" : "#444";
     };
 
-    document.getElementById('fileInput').onchange = (e) => { if(e.target.files[0]) { audio.src = URL.createObjectURL(e.target.files[0]); btn.disabled = false; } };
+    document.getElementById('fileInput').onchange = (e) => { 
+        if(e.target.files[0]) { 
+            audio.src = URL.createObjectURL(e.target.files[0]); 
+            btn.disabled = false; 
+        } 
+    };
 
     let currentMeasureChords = [];
     let lastBeat = -1;
 
     btn.onclick = async () => {
         if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-        await ctx.resume();
-        if (!source) { source = ctx.createMediaElementSource(audio); source.connect(ctx.destination); }
+        if (ctx.state === 'suspended') await ctx.resume();
+        
+        if (!source) { 
+            source = ctx.createMediaElementSource(audio); 
+            source.connect(ctx.destination); 
+        }
 
         if (analyzer) analyzer.stop();
         analyzer = Meyda.createMeydaAnalyzer({
             audioContext: ctx, source: source, bufferSize: 8192,
             featureExtractors: ['chroma'],
             callback: f => {
-                const bpm = parseInt(document.getElementById('bpm').value);
-                const sig = parseInt(document.getElementById('sig').value);
-                const trans = parseInt(document.getElementById('trans').value);
+                const bpm = parseInt(document.getElementById('bpm').value) || 120;
+                const sig = parseInt(document.getElementById('sig').value) || 4;
+                const trans = parseInt(document.getElementById('trans').value) || 0;
                 const beatDuration = 60 / bpm;
-                const currentTime = audio.currentTime;
                 
-                const currentBeatTotal = Math.floor(currentTime / beatDuration);
+                const currentBeatTotal = Math.floor(audio.currentTime / beatDuration);
                 const beatInMeasure = (currentBeatTotal % sig) + 1;
 
-                // השמעת קליק וניהול תיבות
+                // ניהול פעימות ומטרונום
                 if (currentBeatTotal !== lastBeat) {
-                    if (clickEnabled) {
+                    if (clickEnabled && !audio.paused) {
                         const osc = ctx.createOscillator();
                         const g = ctx.createGain();
-                        osc.frequency.value = beatInMeasure === 1 ? 880 : 440;
-                        g.gain.value = document.getElementById('clickVol').value / 200;
+                        osc.frequency.value = beatInMeasure === 1 ? 1000 : 500;
+                        g.gain.value = document.getElementById('clickVol').value / 250;
                         osc.connect(g).connect(ctx.destination);
                         osc.start(); osc.stop(ctx.currentTime + 0.05);
                     }
                     
                     beatDisp.innerText = `BEAT: ${beatInMeasure}`;
                     
-                    // אם הגענו לביט הראשון של התיבה - מחליטים על האקורד של התיבה הקודמת
-                    if (currentMeasureChords.length > 0) {
+                    // החלטה על אקורד פעם בתיבה
+                    if (beatInMeasure === 1 && currentMeasureChords.length > 0) {
                         const counts = {};
                         currentMeasureChords.forEach(x => counts[x] = (counts[x] || 0) + 1);
                         const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
@@ -132,10 +149,11 @@
                     lastBeat = currentBeatTotal;
                 }
 
-                // איסוף נתונים לאקורד הבא
+                // זיהוי אקורד נוכחי (Chroma Analysis)
                 const notes = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
                 const chords = [{n:'', p:[4,7]}, {n:'m', p:[3,7]}];
-                let best = "---", top = 0.4;
+                let best = "---", top = 0.45;
+
                 for(let r=0; r<12; r++) {
                     for(let c of chords) {
                         let s = (f.chroma[r] + f.chroma[(r+c.p[0])%12] + f.chroma[(r+c.p[1])%12]) / 3;
@@ -156,9 +174,10 @@
         const rootStr = chord.replace('m', '');
         const rootIdx = notes.indexOf(rootStr);
         const intervals = chord.includes('m') ? [0, 3, 7] : [0, 4, 7];
+        
         intervals.forEach(i => {
             const n1 = (rootIdx + i) % 12;
-            const n2 = n1 + 12;
+            const n2 = n1 + 12; // מאיר גם באוקטבה השנייה
             document.querySelectorAll(`.key[data-note="${n1}"], .key[data-note="${n2}"]`).forEach(k => k.classList.add('active'));
         });
     }

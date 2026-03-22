@@ -5,37 +5,27 @@
     <title>זיהוי אקורדים מקצועי</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
         .card { background: #1e1e1e; border-radius: 24px; padding: 30px; max-width: 550px; margin: 0 auto; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+        h1 { color: #007bff; margin-bottom: 20px; }
         
-        h1 { color: #007bff; margin-bottom: 25px; font-size: 2.2em; }
-
-        /* תיחום אזור בחירת הקובץ */
-        .file-upload-box {
-            border: 2px dashed #444;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            background: #252525;
-            transition: 0.3s;
-        }
-        .file-upload-box:hover { border-color: #007bff; background: #2a2a2a; }
-        input[type="file"] { color: #aaa; cursor: pointer; font-size: 14px; }
-
+        .file-upload-box { border: 2px dashed #444; padding: 20px; border-radius: 15px; margin-bottom: 20px; background: #252525; }
+        
         #chord-result { font-size: 6.5em; color: #ffeb3b; margin: 10px 0; font-weight: 900; min-height: 1.2em; text-shadow: 0 0 30px rgba(255,235,59,0.3); }
         
-        .controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 20px 0; background: #252525; padding: 15px; border-radius: 15px; border: 1px solid #333; }
-        .t-btn { background: #007bff; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; font-size: 22px; transition: 0.2s; }
-        .t-btn:hover { background: #0056b3; transform: scale(1.1); }
-        
-        .visualizer { display: flex; justify-content: center; gap: 5px; height: 40px; align-items: flex-end; margin-bottom: 20px; opacity: 0.3; }
-        .bar { width: 10px; background: #4CAF50; border-radius: 2px; }
+        .controls { display: flex; justify-content: center; align-items: center; gap: 10px; margin: 15px 0; background: #252525; padding: 15px; border-radius: 15px; }
+        .t-btn { background: #333; color: white; border: 1px solid #444; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 20px; }
+        .t-btn:hover { background: #444; }
 
-        #start-btn { background: #ff0055; color: white; border: none; padding: 18px 60px; font-size: 24px; border-radius: 50px; cursor: pointer; font-weight: bold; box-shadow: 0 10px 20px rgba(255,0,85,0.3); transition: 0.3s; }
-        #start-btn:hover:not(:disabled) { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(255,0,85,0.4); }
-        #start-btn:disabled { background: #333; cursor: not-allowed; opacity: 0.6; }
+        .action-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        #start-btn { background: #ff0055; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; font-weight: bold; flex: 2; }
+        #reset-btn { background: #444; color: white; border: none; padding: 15px 20px; font-size: 16px; border-radius: 50px; cursor: pointer; flex: 1; }
         
-        audio { width: 100%; margin-top: 25px; border-radius: 12px; }
+        #start-btn:disabled { background: #333; opacity: 0.5; cursor: not-allowed; }
+        
+        .visualizer { display: flex; justify-content: center; gap: 4px; height: 30px; align-items: flex-end; margin-bottom: 15px; opacity: 0.2; }
+        .bar { width: 8px; background: #4CAF50; }
+        audio { width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -44,7 +34,6 @@
     <h1>זיהוי אקורדים מקצועי</h1>
     
     <div class="file-upload-box">
-        <p style="margin-top:0; color:#bbb;">בחר קובץ שמע לניתוח (MP3/WAV)</p>
         <input type="file" id="audio-file" accept="audio/*">
     </div>
     
@@ -54,11 +43,15 @@
 
     <div class="controls">
         <button class="t-btn" onclick="changeTranspose(-1)">-</button>
-        <span id="t-display" style="font-weight: bold; font-size: 1.2em; min-width: 120px;">סולם: 0</span>
+        <span id="t-display" style="min-width: 110px;">סולם: 0</span>
         <button class="t-btn" onclick="changeTranspose(1)">+</button>
     </div>
     
-    <button id="start-btn" disabled>התחל ניתוח</button>
+    <div class="action-btns">
+        <button id="start-btn" disabled>התחל ניתוח</button>
+        <button id="reset-btn" onclick="resetAnalysis()">איפוס</button>
+    </div>
+    
     <audio id="audio-player" controls></audio>
 </div>
 
@@ -66,11 +59,104 @@
     let audioContext, source, analyzer;
     let transpose = 0;
     let chordHistory = [];
-    const HISTORY_SIZE = 25; 
+    const HISTORY_SIZE = 15; // הקטנתי מעט כדי שיהיה פחות "תקוע"
     const NOTES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
-    // יצירת הויזואליזציה (12 תווים)
     for(let i=0; i<12; i++) {
         const bar = document.createElement('div');
         bar.id = `bar-${i}`; bar.className = 'bar';
-        document.getElementById('visual
+        document.getElementById('visualizer').appendChild(bar);
+    }
+
+    function resetAnalysis() {
+        chordHistory = [];
+        document.getElementById('chord-result').innerText = "---";
+    }
+
+    function changeTranspose(val) {
+        transpose = (transpose + val + 12) % 12;
+        let displayVal = transpose > 6 ? transpose - 12 : transpose;
+        document.getElementById('t-display').innerText = "סולם: " + (displayVal >= 0 ? "+" : "") + displayVal;
+        resetAnalysis(); // איפוס התצוגה כשמשנים סולם
+    }
+
+    document.getElementById('audio-file').onchange = (e) => {
+        if (e.target.files[0]) {
+            document.getElementById('audio-player').src = URL.createObjectURL(e.target.files[0]);
+            document.getElementById('start-btn').disabled = false;
+            resetAnalysis();
+        }
+    };
+
+    document.getElementById('start-btn').onclick = async () => {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        // תיקון מצב "תקוע" - הכרחת התעוררות
+        if (audioContext.state === 'suspended') {
+            await audioContext.resume();
+        }
+
+        if (!source) {
+            source = audioContext.createMediaElementSource(document.getElementById('audio-player'));
+            source.connect(audioContext.destination);
+        }
+
+        if (analyzer) analyzer.stop();
+
+        analyzer = Meyda.createMeydaAnalyzer({
+            audioContext: audioContext,
+            source: source,
+            bufferSize: 2048,
+            featureExtractors: ['chroma'],
+            callback: features => {
+                const chroma = features.chroma;
+                const threshold = Math.max(...chroma) * 0.6;
+                const cleanChroma = chroma.map(v => v > threshold ? v : 0);
+
+                chroma.forEach((val, i) => {
+                    document.getElementById(`bar-${i}`).style.height = (val * 100) + '%';
+                });
+
+                let bestChord = "---";
+                let maxScore = 0;
+
+                const CHORD_DATA = [
+                    { name: '', pattern: [0, 4, 7] },
+                    { name: 'm', pattern: [0, 3, 7] },
+                    { name: '7', pattern: [0, 4, 7, 10] },
+                    { name: 'maj7', pattern: [0, 4, 7, 11] },
+                    { name: 'm7', pattern: [0, 3, 7, 10] }
+                ];
+
+                for (let root = 0; root < 12; root++) {
+                    for (let type of CHORD_DATA) {
+                        let score = type.pattern.reduce((sum, interval) => sum + cleanChroma[(root + interval) % 12], 0);
+                        if (score > maxScore) {
+                            maxScore = score;
+                            let transposedRoot = (root + transpose + 12) % 12;
+                            bestChord = NOTES[transposedRoot] + type.name;
+                        }
+                    }
+                }
+
+                if (bestChord !== "---") {
+                    chordHistory.push(bestChord);
+                    if (chordHistory.length > HISTORY_SIZE) chordHistory.shift();
+                    const counts = {};
+                    chordHistory.forEach(c => counts[c] = (counts[c] || 0) + 1);
+                    const winner = Object.keys(counts).reduce((a, b) => counts[a] > counts[b] ? a : b);
+                    document.getElementById('chord-result').innerText = winner;
+                }
+            }
+        });
+
+        analyzer.start();
+        document.getElementById('audio-player').play();
+        document.getElementById('start-btn').innerText = "מנתח...";
+        document.getElementById('start-btn').disabled = true;
+    };
+</script>
+</body>
+</html>

@@ -2,81 +2,91 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מנתח אקורדים - קבצים ומיקרופון</title>
+    <title>מנתח אקורדים - יוטיוב ומיקרופון</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/meyda/5.6.0/meyda.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; text-align: center; padding: 30px; }
-        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .controls { display: flex; flex-direction: column; gap: 15px; margin-bottom: 20px; }
-        button, input[type="file"] { padding: 12px; font-size: 16px; cursor: pointer; border-radius: 8px; border: none; }
-        button { background: #007bff; color: white; font-weight: bold; }
-        button:hover { background: #0056b3; }
-        .visualizer { display: flex; justify-content: center; gap: 8px; height: 150px; align-items: flex-end; margin-top: 20px; }
-        .bar { width: 25px; background: #4CAF50; transition: height 0.1s; border-radius: 3px 3px 0 0; }
-        .label { font-size: 11px; margin-top: 5px; color: #888; }
-        #chord-result { font-size: 2.5em; color: #ffeb3b; margin: 20px 0; text-shadow: 0 0 10px rgba(255,235,59,0.3); }
-        audio { width: 100%; margin-top: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 20px; }
+        .card { background: #1e1e1e; border-radius: 15px; padding: 20px; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .video-container { margin: 20px 0; background: #000; border-radius: 10px; overflow: hidden; aspect-ratio: 16/9; }
+        input[type="text"] { width: 70%; padding: 10px; border-radius: 5px; border: none; margin-bottom: 10px; }
+        button { padding: 10px 20px; cursor: pointer; background: #ff0000; color: white; border: none; border-radius: 5px; font-weight: bold; }
+        #chord-result { font-size: 3em; color: #ffeb3b; margin: 15px 0; min-height: 1.2em; }
+        .visualizer { display: flex; justify-content: center; gap: 5px; height: 100px; align-items: flex-end; }
+        .bar { width: 20px; background: #4CAF50; transition: height 0.1s; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h1>מנתח אקורדים חכם</h1>
+    <h1>ניתוח אקורדים מיוטיוב</h1>
+    <p>הדבק את ה-ID של הסרטון (האותיות שאחרי ה-v= בכתובת)</p>
     
-    <div class="controls">
-        <button id="mic-btn">🎤 השתמש במיקרופון</button>
-        <div style="border-top: 1px solid #333; padding-top: 15px;">
-            <label>או העלה קובץ שמע (MP3/WAV):</label><br><br>
-            <input type="file" id="audio-file" accept="audio/*">
-        </div>
+    <input type="text" id="video-id" placeholder="למשל: dQw4w9WgXcQ">
+    <button onclick="loadVideo()">טען סרטון</button>
+
+    <div class="video-container" id="player"></div>
+
+    <div style="margin: 20px;">
+        <button id="start-analysis" style="background: #4CAF50;">הפעל ניתוח (דרך המיקרופון)</button>
+        <p style="font-size: 0.8em; color: #888;">* הניתוח מתבצע על ידי הקשבה לרמקולים דרך המיקרופון של המחשב</p>
     </div>
 
-    <audio id="audio-player" controls style="display:none;"></audio>
-    <h2 id="chord-result">ממתין לפקודה...</h2>
+    <h2 id="chord-result">---</h2>
 
-    <div class="visualizer" id="visualizer">
-        </div>
+    <div class="visualizer" id="visualizer"></div>
 </div>
 
 <script>
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    let source;
-    let analyzer;
-    const chordResult = document.getElementById('chord-result');
-    const audioPlayer = document.getElementById('audio-player');
-    const visualizer = document.getElementById('visualizer');
-
-    // יצירת הגרפים
+    // הגדרת הויזואליזציה
     const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     notes.forEach((note, i) => {
         const col = document.createElement('div');
-        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
-        visualizer.appendChild(col);
+        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div style="font-size:10px">${note}</div>`;
+        document.getElementById('visualizer').appendChild(col);
     });
 
     const CHORD_TEMPLATES = {
-        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
-        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
-        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
-        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
-        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
-        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
+        'C Major': [0, 4, 7], 'D Major': [2, 6, 9], 'E Major': [4, 8, 11],
+        'F Major': [5, 9, 0], 'G Major': [7, 11, 2], 'A Major': [9, 1, 4], 'B Major': [11, 3, 6],
+        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11], 'A Minor': [9, 0, 4]
     };
 
-    function setupAnalyzer(audioSource) {
-        if (analyzer) analyzer.stop();
-        
-        analyzer = Meyda.createMeydaAnalyzer({
+    // טעינת נגן יוטיוב
+    let player;
+    function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+            height: '360',
+            width: '640',
+            videoId: '', 
+        });
+    }
+
+    function loadVideo() {
+        const id = document.getElementById('video-id').value;
+        if(player && id) player.loadVideoById(id);
+    }
+
+    // טעינת ה-API של יוטיוב
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    var firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+    // לוגיקת הניתוח (דרך המיקרופון)
+    document.getElementById('start-analysis').onclick = async () => {
+        const audioContext = new AudioContext();
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioContext.createMediaStreamSource(stream);
+
+        const analyzer = Meyda.createMeydaAnalyzer({
             audioContext: audioContext,
-            source: audioSource,
+            source: source,
             bufferSize: 1024,
             featureExtractors: ['chroma'],
             callback: features => {
                 const chroma = features.chroma;
                 chroma.forEach((val, i) => {
-                    const bar = document.getElementById(`bar-${i}`);
-                    bar.style.height = (val * 100) + '%';
-                    bar.style.background = val > 0.6 ? '#ffeb3b' : '#4CAF50';
+                    document.getElementById(`bar-${i}`).style.height = (val * 100) + '%';
                 });
 
                 let bestChord = "---";
@@ -85,35 +95,11 @@
                     let sim = notesIdx.reduce((sum, idx) => sum + chroma[idx], 0);
                     if (sim > maxSim) { maxSim = sim; bestChord = name; }
                 }
-                chordResult.innerText = bestChord;
+                document.getElementById('chord-result').innerText = bestChord;
             }
         });
         analyzer.start();
-    }
-
-    // טיפול במיקרופון
-    document.getElementById('mic-btn').onclick = async () => {
-        await audioContext.resume();
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        source = audioContext.createMediaStreamSource(stream);
-        setupAnalyzer(source);
-        chordResult.innerText = "מקשיב...";
-    };
-
-    // טיפול בקובץ
-    document.getElementById('audio-file').onchange = async (e) => {
-        await audioContext.resume();
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const url = URL.createObjectURL(file);
-        audioPlayer.src = url;
-        audioPlayer.style.display = 'block';
-        
-        source = audioContext.createMediaElementSource(audioPlayer);
-        source.connect(audioContext.destination);
-        setupAnalyzer(source);
-        chordResult.innerText = "נגן את הקובץ...";
+        document.getElementById('start-analysis').innerText = "מנתח...";
     };
 </script>
 </body>

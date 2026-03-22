@@ -2,121 +2,108 @@
 <html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>מנתח אקורדים - גרסה נקייה</title>
+    <title>מנתח אקורדים - גרסה מתוקנת</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/meyda/5.6.0/meyda.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; text-align: center; padding: 50px; }
-        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; box-shadow: 0 10px 40px rgba(0,0,0,0.6); border: 1px solid #333; }
-        .upload-area { border: 2px dashed #444; padding: 20px; border-radius: 10px; margin-bottom: 20px; transition: 0.3s; }
-        .upload-area:hover { border-color: #007bff; }
-        button { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 15px rgba(0,123,255,0.3); }
-        button:hover { background: #0056b3; transform: translateY(-2px); }
-        button:disabled { background: #444; cursor: not-allowed; box-shadow: none; }
-        #chord-result { font-size: 3.5em; color: #ffeb3b; margin: 30px 0; font-weight: bold; min-height: 1.2em; text-shadow: 0 0 15px rgba(255,235,59,0.4); }
-        .visualizer { display: flex; justify-content: center; gap: 6px; height: 120px; align-items: flex-end; margin-top: 20px; }
-        .bar { width: 20px; background: #4CAF50; transition: height 0.1s; border-radius: 4px 4px 0 0; }
-        audio { width: 100%; margin-top: 20px; display: none; filter: invert(100%); }
-        .label { font-size: 10px; color: #888; margin-top: 5px; }
+        body { font-family: sans-serif; background: #121212; color: white; text-align: center; padding: 30px; }
+        .card { background: #1e1e1e; border-radius: 20px; padding: 30px; max-width: 500px; margin: 0 auto; border: 1px solid #333; }
+        #start-btn { background: #007bff; color: white; border: none; padding: 15px 40px; font-size: 20px; border-radius: 50px; cursor: pointer; margin: 20px 0; }
+        #start-btn:disabled { background: #444; opacity: 0.5; }
+        #chord-result { font-size: 3em; color: #ffeb3b; margin: 20px 0; }
+        .visualizer { display: flex; justify-content: center; gap: 5px; height: 100px; align-items: flex-end; }
+        .bar { width: 20px; background: #4CAF50; transition: height 0.1s; }
+        audio { width: 100%; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <h1>מנתח אקורדים</h1>
-    
-    <div class="upload-area">
-        <p>בחר קובץ שמע מהמחשב (MP3/WAV)</p>
-        <input type="file" id="audio-file" accept="audio/*">
-    </div>
-
+    <input type="file" id="audio-file" accept="audio/*">
+    <br>
     <button id="start-btn" disabled>התחל ניתוח</button>
-
-    <audio id="audio-player" controls></audio>
-    
-    <h2 id="chord-result">העלה שיר...</h2>
-
+    <h2 id="chord-result">העלה קובץ...</h2>
     <div class="visualizer" id="visualizer"></div>
+    <audio id="audio-player" controls></audio>
 </div>
 
 <script>
-    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    let audioContext;
     let source;
     let analyzer;
+    
     const startBtn = document.getElementById('start-btn');
     const audioFile = document.getElementById('audio-file');
     const audioPlayer = document.getElementById('audio-player');
     const chordResult = document.getElementById('chord-result');
 
-    // יצירת הגרפים ל-12 התווים
-    const notes = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    notes.forEach((note, i) => {
-        const col = document.createElement('div');
-        col.style.display = 'flex';
-        col.style.flexDirection = 'column';
-        col.style.alignItems = 'center';
-        col.innerHTML = `<div id="bar-${i}" class="bar" style="height: 0%"></div><div class="label">${note}</div>`;
-        document.getElementById('visualizer').appendChild(col);
-    });
+    // יצירת הגרפים
+    for(let i=0; i<12; i++) {
+        const bar = document.createElement('div');
+        bar.id = `bar-${i}`;
+        bar.className = 'bar';
+        document.getElementById('visualizer').appendChild(bar);
+    }
 
     const CHORD_TEMPLATES = {
-        'C Major': [0, 4, 7], 'C# Major': [1, 5, 8], 'D Major': [2, 6, 9],
-        'Eb Major': [3, 7, 10], 'E Major': [4, 8, 11], 'F Major': [5, 9, 0],
-        'F# Major': [6, 10, 1], 'G Major': [7, 11, 2], 'Ab Major': [8, 0, 3],
-        'A Major': [9, 1, 4], 'Bb Major': [10, 2, 5], 'B Major': [11, 3, 6],
-        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11],
-        'A Minor': [9, 0, 4], 'G Minor': [7, 10, 2]
+        'C Major': [0, 4, 7], 'D Major': [2, 6, 9], 'E Major': [4, 8, 11],
+        'F Major': [5, 9, 0], 'G Major': [7, 11, 2], 'A Major': [9, 1, 4], 'B Major': [11, 3, 6],
+        'C Minor': [0, 3, 7], 'D Minor': [2, 5, 9], 'E Minor': [4, 7, 11], 'A Minor': [9, 0, 4]
     };
 
-    // כשבוחרים קובץ
     audioFile.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            audioPlayer.src = url;
-            audioPlayer.style.display = 'block';
+        if (e.target.files[0]) {
+            audioPlayer.src = URL.createObjectURL(e.target.files[0]);
             startBtn.disabled = false;
             chordResult.innerText = "מוכן! לחץ על התחל";
         }
     };
 
-    // כשלוחצים על כפתור התחל
     startBtn.onclick = async () => {
-        await audioContext.resume();
-        
-        if (!source) {
-            source = audioContext.createMediaElementSource(audioPlayer);
-            source.connect(audioContext.destination);
-        }
-
-        if (analyzer) analyzer.stop();
-
-        analyzer = Meyda.createMeydaAnalyzer({
-            audioContext: audioContext,
-            source: source,
-            bufferSize: 1024,
-            featureExtractors: ['chroma'],
-            callback: features => {
-                const chroma = features.chroma;
-                chroma.forEach((val, i) => {
-                    const bar = document.getElementById(`bar-${i}`);
-                    bar.style.height = (val * 100) + '%';
-                    bar.style.background = val > 0.6 ? '#ffeb3b' : '#4CAF50';
-                });
-
-                let bestChord = "---";
-                let maxSim = 0.5;
-                for (const [name, notesIdx] of Object.entries(CHORD_TEMPLATES)) {
-                    let sim = notesIdx.reduce((sum, idx) => sum + chroma[idx], 0);
-                    if (sim > maxSim) { maxSim = sim; bestChord = name; }
-                }
-                chordResult.innerText = bestChord;
+        try {
+            // יצירת ה-Context רק בלחיצה
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
-        });
+            
+            await audioContext.resume();
 
-        analyzer.start();
-        startBtn.innerText = "מנתח...";
-        startBtn.disabled = true;
-        audioPlayer.play();
+            // חיבור הנגן למערכת הניתוח
+            if (!source) {
+                source = audioContext.createMediaElementSource(audioPlayer);
+                source.connect(audioContext.destination);
+            }
+
+            if (analyzer) analyzer.stop();
+
+            analyzer = Meyda.createMeydaAnalyzer({
+                audioContext: audioContext,
+                source: source,
+                bufferSize: 1024,
+                featureExtractors: ['chroma'],
+                callback: features => {
+                    features.chroma.forEach((val, i) => {
+                        document.getElementById(`bar-${i}`).style.height = (val * 100) + 'px';
+                    });
+
+                    let best = "---", max = 0.5;
+                    for (const [name, idxs] of Object.entries(CHORD_TEMPLATES)) {
+                        let s = idxs.reduce((a, b) => a + features.chroma[b], 0);
+                        if (s > max) { max = s; best = name; }
+                    }
+                    chordResult.innerText = best;
+                }
+            });
+
+            analyzer.start();
+            audioPlayer.play();
+            startBtn.innerText = "מנתח...";
+            startBtn.disabled = true;
+
+        } catch (err) {
+            console.error(err);
+            alert("שגיאה: " + err.message);
+        }
     };
 </script>
 </body>

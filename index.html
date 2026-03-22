@@ -5,41 +5,142 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MAESTRO PRO AI</title>
 <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
-<analyze(f)>
-  chromaHistory.push(f.chroma);
-if (chromaHistory.length > HISTORY_SIZE) chromaHistory.shift();
 
-// ממוצע
-let chroma = new Array(12).fill(0);
-chromaHistory.forEach(frame => {
-  for(let i=0;i<12;i++) chroma[i]+=frame[i];
-});
-chroma = chroma.map(v => v / chromaHistory.length);
-    
 <style>
 :root{
---bg:#05070a;--panel:#0d1117;--accent:#00f2ff;
---gold:#ffcc00;--red:#ff3e3e;--border:#30363d;
+--bg:#0b0f14;
+--panel:#121821;
+--accent:#00e5ff;
+--accent2:#ffcc00;
+--danger:#ff3e3e;
 --text:#e6edf3;
+--muted:#7d8590;
 }
-body{margin:0;background:#000;color:#fff;font-family:sans-serif;display:flex;height:100vh}
-aside{width:320px;background:#111;padding:15px;display:flex;flex-direction:column;gap:10px}
-main{flex:1;display:flex;flex-direction:column}
 
-#chord-main{
-font-size:120px;
+*{box-sizing:border-box;font-family:Inter,system-ui}
+body{
+margin:0;
+background:var(--bg);
+color:var(--text);
+display:grid;
+grid-template-columns:320px 1fr;
+height:100vh;
+overflow:hidden;
+}
+
+/* SIDEBAR */
+aside{
+background:var(--panel);
+padding:20px;
+display:flex;
+flex-direction:column;
+gap:16px;
+border-left:1px solid #222;
+}
+
+.logo{
+font-size:20px;
 font-weight:900;
 text-align:center;
-color:var(--gold);
-transition:all .25s,opacity .2s;
+background:linear-gradient(90deg,#00e5ff,#ffcc00);
+-webkit-background-clip:text;
+color:transparent;
 }
 
-.player-bar{padding:10px;background:#111;text-align:center}
-button{padding:10px;margin:5px;border:none;background:#00f2ff;color:#000;font-weight:bold;cursor:pointer}
+.card{
+background:#0f141c;
+padding:14px;
+border-radius:12px;
+border:1px solid #222;
+}
 
-.key{width:40px;height:120px;background:white;border:1px solid #000;display:inline-block}
-.key.active{background:red}
+.label{
+font-size:11px;
+color:var(--muted);
+margin-bottom:5px;
+}
 
+.val{
+font-size:26px;
+font-weight:800;
+text-align:center;
+}
+
+button{
+background:var(--accent);
+border:none;
+padding:12px;
+border-radius:10px;
+font-weight:800;
+cursor:pointer;
+transition:.2s;
+}
+button:hover{transform:scale(1.05)}
+
+.main{
+display:flex;
+flex-direction:column;
+}
+
+/* CHORD DISPLAY */
+.chord-display{
+flex:1;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+}
+
+#chord{
+font-size:140px;
+font-weight:900;
+color:var(--accent2);
+transition:.2s;
+}
+
+#sub{
+color:var(--accent);
+margin-top:-10px;
+}
+
+/* TIMELINE */
+.timeline{
+height:80px;
+display:flex;
+gap:6px;
+overflow-x:auto;
+padding:10px;
+border-top:1px solid #222;
+}
+
+.tag{
+background:#111;
+border:2px solid var(--accent);
+padding:6px 12px;
+border-radius:8px;
+font-weight:800;
+}
+
+/* PLAYER */
+.player{
+padding:12px;
+display:flex;
+gap:10px;
+justify-content:center;
+border-top:1px solid #222;
+}
+
+/* PIANO */
+.piano{
+display:flex;
+justify-content:center;
+padding:10px;
+background:#111;
+}
+.key{
+width:38px;height:120px;background:#fff;border:1px solid #000;
+}
+.key.active{background:var(--danger)}
 </style>
 </head>
 
@@ -47,54 +148,73 @@ button{padding:10px;margin:5px;border:none;background:#00f2ff;color:#000;font-we
 
 <aside>
 
-<button onclick="document.getElementById('audio').click()">טען שיר</button>
-<input type="file" id="audio" accept="audio/*" hidden>
+<div class="logo">MAESTRO PRO AI</div>
 
-<div>BPM: <span id="bpm">---</span></div>
-<div>KEY: <span id="key">---</span></div>
+<button onclick="file.click()">טען שיר</button>
+<input type="file" id="file" hidden>
 
+<div class="card">
+<div class="label">BPM</div>
+<div id="bpm" class="val">---</div>
+</div>
+
+<div class="card">
+<div class="label">KEY</div>
+<div id="key" class="val">---</div>
+</div>
+
+<div class="card">
 <button onclick="toggleAI()">AI BOOST</button>
-<button onclick="autoTranspose()">AUTO KEY</button>
+</div>
 
 </aside>
 
-<main>
+<div class="main">
 
-<div id="chord-main">--</div>
-
-<div class="player-bar">
-<button onclick="togglePlay()">▶</button>
+<div class="chord-display">
+<div id="chord">--</div>
+<div id="sub">AI READY</div>
 </div>
 
-<div id="piano"></div>
+<div class="player">
+<button onclick="play()">▶</button>
+<button onclick="pause()">❚❚</button>
+</div>
 
-</main>
+<div class="timeline" id="timeline"></div>
+
+<div class="piano" id="piano"></div>
+
+</div>
 
 <script>
 
+let audio=new Audio();
 let ctx,src,meyda;
-let player=new Audio();
-let currentBPM=120;
-let aiBoost=false;
-let smoothed=new Array(12).fill(0.1);
+
+let chromaHist=[];
+let lastChord="--";
+let stability=0;
+let ai=false;
 
 const notes=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 
-const chords=[
-{n:"",p:[0,4,7]},
-{n:"m",p:[0,3,7]},
-{n:"7",p:[0,4,10]},
-{n:"dim",p:[0,3,6]},
-{n:"aug",p:[0,4,8]}
+const templates=[
+{name:"",i:[0,4,7]},
+{name:"m",i:[0,3,7]},
+{name:"7",i:[0,4,7,10]},
+{name:"maj7",i:[0,4,7,11]},
+{name:"m7",i:[0,3,7,10]}
 ];
 
-document.getElementById("audio").onchange=async e=>{
-player.src=URL.createObjectURL(e.target.files[0]);
-}
+file.onchange=e=>{
+audio.src=URL.createObjectURL(e.target.files[0]);
+};
 
 function init(){
 ctx=new AudioContext();
-src=ctx.createMediaElementSource(player);
+src=ctx.createMediaElementSource(audio);
+
 meyda=Meyda.createMeydaAnalyzer({
 audioContext:ctx,
 source:src,
@@ -105,49 +225,53 @@ callback:analyze
 meyda.start();
 }
 
-function togglePlay(){
-if(!ctx) init();
-player.paused?player.play():player.pause();
-}
-
-function toggleAI(){
-aiBoost=!aiBoost;
-}
+function play(){ if(!ctx) init(); audio.play(); }
+function pause(){ audio.pause(); }
+function toggleAI(){ ai=!ai; }
 
 function analyze(f){
 
-let chroma=[...f.chroma];
+chromaHist.push(f.chroma);
+if(chromaHist.length>6) chromaHist.shift();
 
-if(aiBoost){
-for(let i=0;i<12;i++){
-smoothed[i]=smoothed[i]*0.9+chroma[i]*0.1;
-smoothed[i]=Math.pow(smoothed[i],1.5);
-}
-chroma=smoothed;
+let chroma=new Array(12).fill(0);
+chromaHist.forEach(c=>{
+for(let i=0;i<12;i++) chroma[i]+=c[i];
+});
+chroma=chroma.map(v=>v/chromaHist.length);
+
+if(ai){
+chroma=chroma.map(v=>Math.pow(v,1.4));
 }
 
-let best={score:0,name:"--"};
-let second={score:0};
+let best={score:-999,name:"--"};
+let second={score:-999};
 
 for(let r=0;r<12;r++){
-chords.forEach(c=>{
-let score=chroma[r]*1.2;
-c.p.forEach(i=>{
-score+=chroma[(r+i)%12];
+templates.forEach(t=>{
+let score=0;
+
+t.i.forEach(i=>{
+score+=chroma[(r+i)%12]*1.2;
 });
+
+for(let i=0;i<12;i++){
+if(!t.i.includes((i-r+12)%12)){
+score-=chroma[i]*0.25;
+}
+}
 
 if(score>best.score){
 second=best;
-best={score,name:notes[r]+c.n};
-}
-else if(score>second.score){
+best={score,name:notes[r]+t.name};
+}else if(score>second.score){
 second={score};
 }
 });
 }
 
-let confidence=best.score/(second.score+0.001);
-if(confidence<1.15) return;
+let conf=best.score/(second.score+0.001);
+if(conf<1.1) return;
 
 // bass
 let bass=chroma.indexOf(Math.max(...chroma));
@@ -155,73 +279,64 @@ if(bass!==notes.indexOf(best.name[0])){
 best.name+="/"+notes[bass];
 }
 
-updateUI(best);
-detectKey(chroma);
+// stability
+if(best.name===lastChord){
+stability++;
+}else{
+stability=0;
+}
+if(stability<2) return;
 
+lastChord=best.name;
+
+updateUI(best.name);
+updateKey(chroma);
 }
 
-function updateUI(best){
-let el=document.getElementById("chord-main");
-if(el.innerText===best.name)return;
+function updateUI(ch){
+let el=document.getElementById("chord");
+if(el.innerText===ch)return;
 
-el.style.opacity=0;
-setTimeout(()=>{
-el.innerText=best.name;
-el.style.opacity=1;
-},80);
+el.style.transform="scale(1.2)";
+setTimeout(()=>el.style.transform="scale(1)",150);
 
-updatePiano(best.name);
+el.innerText=ch;
+
+let tag=document.createElement("div");
+tag.className="tag";
+tag.innerText=ch;
+timeline.prepend(tag);
+if(timeline.children.length>30) timeline.lastChild.remove();
+
+updatePiano(ch);
+}
+
+function updateKey(chroma){
+let i=chroma.indexOf(Math.max(...chroma));
+document.getElementById("key").innerText=notes[i];
 }
 
 function updatePiano(ch){
 document.querySelectorAll(".key").forEach(k=>k.classList.remove("active"));
-
 let root=notes.indexOf(ch[0]);
 
 [0,4,7].forEach(i=>{
 let n=(root+i)%12;
 document.querySelectorAll(".key").forEach(k=>{
-if(k.dataset.note%12==n)k.classList.add("active");
+if(k.dataset.note%12==n) k.classList.add("active");
 });
 });
 }
 
-function detectKey(chroma){
-let max=chroma.indexOf(Math.max(...chroma));
-document.getElementById("key").innerText=notes[max];
-}
-
-function autoTranspose(){
-let k=document.getElementById("key").innerText;
-let idx=notes.indexOf(k);
-alert("Transpose: "+(-idx));
-}
-
-// piano
-let p=document.getElementById("piano");
+// piano init
 for(let i=0;i<24;i++){
 let k=document.createElement("div");
 k.className="key";
 k.dataset.note=i;
-p.appendChild(k);
+piano.appendChild(k);
 }
 
-</script> 
-let chromaHistory = [];
-const HISTORY_SIZE = 6;
-
-const chordTemplates = [
-  {name:"", intervals:[0,4,7]},
-  {name:"m", intervals:[0,3,7]},
-  {name:"7", intervals:[0,4,7,10]},
-  {name:"maj7", intervals:[0,4,7,11]},
-  {name:"m7", intervals:[0,3,7,10]},
-  {name:"dim", intervals:[0,3,6]},
-  {name:"aug", intervals:[0,4,8]},
-  {name:"sus4", intervals:[0,5,7]},
-  {name:"sus2", intervals:[0,2,7]}
-];
-];
+</script>
 
 </body>
 </html>

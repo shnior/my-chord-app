@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maestro Platinum v23.3 ULTRA</title>
+    <title>MAESTRO PLATINUM v23.3 ULTRA AI</title>
     <script src="https://unpkg.com/meyda@5.6.0/dist/web/meyda.min.js"></script>
     <style>
         :root {
@@ -11,77 +11,153 @@
             --gold: #ffcc00; --red: #ff3e3e; --border: #30363d;
             --text: #e6edf3; --gray: #8b949e;
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background: var(--bg); color: var(--text); margin: 0; display: grid; 
-               grid-template-columns: 340px 1fr; grid-template-rows: 1fr 300px; 
-               height: 100vh; overflow: hidden; }
-
-        aside { grid-row: 1 / -1; background: var(--panel); border-left: 1px solid var(--border);
-                padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-
-        .logo h1 { font-size: 22px; background: linear-gradient(90deg, #00f2ff, #ffcc00); 
-                   -webkit-background-clip: text; color: transparent; margin: 0; 
-                   text-align: center; border-bottom: 3px solid var(--accent); padding-bottom: 12px; }
-
-        .card { background: rgba(255,255,255,0.04); border: 1px solid var(--border); 
-                padding: 12px; border-radius: 10px; position: relative; }
-
-        .label { font-size: 9px; color: var(--gray); font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
-        .val { font-size: 26px; font-weight: 900; text-align: center; font-family: monospace; color: #fff; }
-
-        main { grid-column: 2; grid-row: 1; background: #000; position: relative; display: flex; flex-direction: column; }
-        .chord-display { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #chord-main { 
-            font-size: clamp(90px, 18vw, 210px); font-weight: 950; color: var(--gold); 
-            text-shadow: 0 0 60px rgba(255,204,0,0.6); line-height: 0.85; 
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        body { 
+            background: var(--bg); color: var(--text); margin: 0; 
+            display: grid; grid-template-columns: 360px 1fr; grid-template-rows: 1fr auto;
+            height: 100vh; overflow: hidden; 
         }
-        #chord-main.new { transform: scale(1.15); text-shadow: 0 0 120px #ffcc00; }
-        #chord-sub { font-size: 28px; color: var(--accent); font-weight: 300; margin-top: -10px; }
-
-        #waveform-container { height: 130px; background: #0a0d12; border-top: 1px solid var(--border); position: relative; cursor: pointer; }
+        aside { 
+            grid-row: 1 / -1; background: var(--panel); border-left: 1px solid var(--border);
+            padding: 24px; display: flex; flex-direction: column; gap: 16px;
+            box-shadow: 0 0 40px rgba(0, 242, 255, 0.08);
+        }
+        .logo { 
+            text-align: center; padding-bottom: 16px; border-bottom: 3px solid var(--accent);
+        }
+        .logo h1 { 
+            font-size: 24px; font-weight: 900; margin: 0;
+            background: linear-gradient(90deg, #00f2ff, #ffcc00, #ff3e3e);
+            -webkit-background-clip: text; color: transparent;
+            text-shadow: 0 0 30px rgba(255, 204, 0, 0.5);
+        }
+        .lang-btn {
+            align-self: center; background: transparent; border: 1px solid var(--accent);
+            color: var(--accent); padding: 6px 12px; border-radius: 20px; font-size: 11px;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .lang-btn:hover { background: var(--accent); color: #000; }
+        .card { 
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+            padding: 14px; border-radius: 12px; position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .label { 
+            font-size: 10px; color: var(--gray); font-weight: 800; 
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;
+        }
+        .val { 
+            font-size: 28px; font-weight: 900; text-align: center; 
+            font-family: 'Courier New', monospace; color: #fff;
+        }
+        main { 
+            grid-column: 2; grid-row: 1; background: #000; position: relative; 
+            display: flex; flex-direction: column;
+        }
+        .chord-display { 
+            flex: 1; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        #chord-main {
+            font-size: clamp(100px, 22vw, 240px); font-weight: 950; color: var(--gold);
+            text-shadow: 0 0 80px rgba(255,204,0,0.7), 0 0 160px rgba(255,204,0,0.3);
+            line-height: 0.85; transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.4);
+        }
+        #chord-main.new { 
+            transform: scale(1.18) rotate(2deg); 
+            text-shadow: 0 0 140px #ffcc00, 0 0 220px #ff3e3e;
+        }
+        #chord-sub { 
+            font-size: 32px; color: var(--accent); font-weight: 400; 
+            margin-top: -12px; text-shadow: 0 0 20px var(--accent);
+        }
+        #waveform-container { 
+            height: 140px; background: #0a0d12; border-top: 1px solid var(--border); 
+            position: relative; cursor: pointer;
+        }
         #waveform-canvas { width: 100%; height: 100%; }
-
-        .player-bar { background: #161b22; border-top: 1px solid var(--border); padding: 12px; display: flex; gap: 12px; justify-content: center; align-items: center; }
-        .btn-ctl { background: #30363d; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.3s; }
-        .btn-ctl:hover { background: var(--accent); color: #000; }
-        .btn-play { background: var(--accent); color: #000; padding: 12px 40px; font-size: 18px; font-weight: 900; }
-
-        footer { grid-column: 2; grid-row: 2; background: #000; display: flex; flex-direction: column; }
-        .history { display: flex; gap: 8px; overflow-x: auto; padding: 12px; height: 68px; border-bottom: 1px solid var(--border); }
-        .tag { background: #161b22; border: 1px solid var(--accent); padding: 6px 14px; border-radius: 6px; color: var(--accent); font-weight: 900; white-space: nowrap; }
-
-        .piano { display: flex; justify-content: center; flex: 1; padding: 10px; direction: ltr; }
-        .key { width: 42px; height: 120px; background: #fff; border: 1px solid #222; border-radius: 0 0 8px 8px; position: relative; }
-        .key.b { width: 28px; background: #111; height: 80px; margin: 0 -14px; z-index: 10; border-radius: 0 0 4px 4px; }
-        .key.active { background: var(--red) !important; box-shadow: 0 0 25px var(--red); animation: flash 0.4s; }
-
-        @keyframes flash { 0% { filter: brightness(3); } 100% { filter: brightness(1); } }
-
-        .spectrum { height: 60px; display: flex; gap: 3px; align-items: flex-end; padding: 0 20px; background: rgba(0,0,0,0.6); }
-        .bar { width: 100%; background: var(--accent); transition: height 0.05s; }
-
-        .meter { height: 8px; background: #222; border-radius: 4px; overflow: hidden; }
+        .player-bar { 
+            background: #161b22; border-top: 1px solid var(--border); 
+            padding: 14px 20px; display: flex; gap: 12px; align-items: center;
+        }
+        #progress-container {
+            flex: 1; height: 7px; background: var(--border); border-radius: 999px;
+            position: relative; cursor: pointer; margin: 0 12px;
+        }
+        #progress-bar {
+            position: absolute; height: 100%; background: linear-gradient(90deg, var(--accent), var(--gold));
+            border-radius: 999px; width: 0%; transition: width 0.08s linear; box-shadow: 0 0 15px var(--accent);
+        }
+        .btn-ctl { 
+            background: #30363d; color: white; border: none; 
+            padding: 12px 26px; border-radius: 8px; cursor: pointer; 
+            font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-ctl:hover { background: var(--accent); color: #000; transform: scale(1.05); }
+        .btn-play { 
+            background: var(--accent); color: #000; padding: 14px 48px; 
+            font-size: 19px; font-weight: 900; box-shadow: 0 0 30px rgba(0,242,255,0.6);
+        }
+        footer { 
+            grid-column: 2; grid-row: 2; background: #000; display: flex; flex-direction: column;
+        }
+        .history { 
+            display: flex; gap: 8px; overflow-x: auto; padding: 14px; 
+            height: 72px; border-bottom: 1px solid var(--border); scroll-behavior: smooth;
+        }
+        .tag { 
+            background: #161b22; border: 2px solid var(--accent); padding: 7px 16px; 
+            border-radius: 8px; color: var(--accent); font-weight: 900; 
+            white-space: nowrap; font-size: 15px; box-shadow: 0 0 12px rgba(0,242,255,0.4);
+        }
+        .spectrum { 
+            height: 62px; display: flex; gap: 4px; align-items: flex-end; 
+            padding: 0 20px; background: rgba(0,0,0,0.7);
+        }
+        .bar { width: 100%; background: var(--accent); transition: height 0.04s ease-out; }
+        .piano { 
+            display: flex; justify-content: center; flex: 1; padding: 12px; 
+            direction: ltr; gap: 2px; background: #111;
+        }
+        .key { 
+            width: 46px; height: 138px; background: #fff; border: 1px solid #222; 
+            border-radius: 0 0 10px 10px; position: relative; transition: all 0.1s;
+        }
+        .key.b { 
+            width: 30px; background: #111; height: 92px; margin: 0 -15px; z-index: 10; 
+            border-radius: 0 0 6px 6px; top: -2px;
+        }
+        .key.active { 
+            background: var(--red) !important; box-shadow: 0 0 30px var(--red), 0 0 50px var(--red); 
+            animation: flash 0.35s ease-out;
+        }
+        @keyframes flash { 0% { filter: brightness(3.5) saturate(1.8); } 100% { filter: brightness(1); } }
+        .meter { height: 10px; background: #222; border-radius: 999px; overflow: hidden; }
         .meter-fill { height: 100%; background: linear-gradient(90deg, #00f2ff, #ffcc00); width: 0%; transition: width 0.1s; }
+        .ai-active { box-shadow: 0 0 25px #ff3e3e !important; }
     </style>
 </head>
 <body>
-
 <aside>
-    <div class="logo"><h1>MAESTRO ULTRA v23.3</h1></div>
-    
-    <button class="btn-ctl" style="background:var(--accent);color:#000;padding:14px;" onclick="document.getElementById('audio-in').click()">טען MP3 / WAV</button>
+    <div class="logo">
+        <h1>MAESTRO PLATINUM<br><span style="font-size:13px;letter-spacing:3px;color:#ff3e3e;">ULTRA AI v23.3</span></h1>
+        <button class="lang-btn" onclick="switchLang()">🇬🇧 EN / 🇮🇱 HE</button>
+    </div>
+   
+    <button class="btn-ctl" style="background:var(--accent);color:#000;padding:16px;font-size:15px;" onclick="document.getElementById('audio-in').click()">טען MP3 / WAV / FLAC</button>
     <input type="file" id="audio-in" style="display:none" accept="audio/*">
 
     <div class="card"><span class="label">BPM</span><div id="bpm-val" class="val">---</div>
-        <button onclick="tapTempo()" style="width:100%;margin-top:8px;font-size:13px;">TAP TEMPO (4×)</button>
+        <button onclick="tapTempo()" style="width:100%;margin-top:8px;font-size:13px;padding:8px;">TAP TEMPO (4×)</button>
     </div>
 
-    <div class="card"><span class="label">מפתח</span><div id="key-val" class="val" style="font-size:18px;color:#00f2ff">---</div></div>
+    <div class="card"><span class="label">מפתח</span><div id="key-val" class="val" style="font-size:19px;color:#00f2ff">---</div></div>
 
     <div class="card">
         <span class="label">רזולוציה</span>
-        <select id="update-rate" style="width:100%;background:transparent;border:1px solid var(--border);color:#fff;padding:8px;border-radius:6px;">
+        <select id="update-rate" style="width:100%;background:transparent;border:1px solid var(--border);color:#fff;padding:10px;border-radius:8px;">
             <option value="1">כל פעימה</option>
             <option value="2" selected>כל 2 פעימות</option>
             <option value="4">כל תיבה</option>
@@ -89,32 +165,43 @@
     </div>
 
     <div class="card"><span class="label">טרנספוזיציה</span>
-        <input type="number" id="trans-val" value="0" style="width:100%;text-align:center;font-size:24px;background:transparent;border:1px solid var(--border);color:#fff;">
+        <input type="number" id="trans-val" value="0" style="width:100%;text-align:center;font-size:26px;background:transparent;border:1px solid var(--border);color:#fff;padding:6px;border-radius:8px;">
     </div>
 
     <div class="card">
-        <span class="label">ווליום</span>
-        <input type="range" id="vol" min="0" max="100" value="85" style="width:100%;">
+        <span class="label">AI זיהוי</span>
+        <button id="ai-btn" class="btn-ctl" onclick="toggleAI()" style="width:100%;font-size:15px;">AI BOOST: OFF</button>
+    </div>
+
+    <div class="card">
+        <span class="label">ווליום + RMS</span>
+        <input type="range" id="vol" min="0" max="100" value="88" style="width:100%;">
         <div class="meter"><div id="rms-meter" class="meter-fill"></div></div>
     </div>
 
-    <div id="clock" style="margin-top:auto;text-align:center;font-family:monospace;font-size:28px;color:var(--accent);font-weight:900;">00:00</div>
+    <button onclick="exportSheet()" class="btn-ctl" style="width:100%;background:#ff3e3e;">ייצא Chord Sheet (TXT)</button>
+
+    <div id="clock" style="margin-top:auto;text-align:center;font-family:monospace;font-size:32px;color:var(--accent);font-weight:900;text-shadow:0 0 20px var(--accent);">00:00</div>
 </aside>
 
 <main>
     <div class="chord-display">
         <div id="chord-main">--</div>
-        <div id="chord-sub">טען שיר כדי להתחיל</div>
+        <div id="chord-sub">טען שיר כדי להתחיל • AI מוכן</div>
     </div>
-
+    
     <div id="waveform-container" title="לחץ לקפיצה">
         <canvas id="waveform-canvas"></canvas>
     </div>
-
+    
     <div class="player-bar">
         <button class="btn-ctl" onclick="skip(-15)">-15s</button>
         <button id="play-btn" class="btn-ctl btn-play" onclick="togglePlay()">▶ נגן</button>
         <button class="btn-ctl" onclick="skip(15)">+15s</button>
+    </div>
+    
+    <div id="progress-container" onclick="seekProgress(event)">
+        <div id="progress-bar"></div>
     </div>
 </main>
 
@@ -132,6 +219,10 @@ let lastUpdate = 0;
 let taps = [];
 let waveformData = [];
 let waveformCtx;
+let aiBoost = false;
+let smoothedChroma = new Array(12).fill(0.1);
+let currentLang = 'he';
+
 const notes = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const notesHeb = ["דו","דו#","רה","רה#","מי","פה","פה#","סול","סול#","לה","לה#","סי"];
 
@@ -144,15 +235,53 @@ const chordTypes = [
     {n:"dim", p:[0,3,6], h:"dim", c:"#888"},
     {n:"aug", p:[0,4,8], h:"aug", c:"#ff9900"},
     {n:"sus4", p:[0,5,7], h:"sus4", c:"#00cc99"},
-    {n:"sus2", p:[0,2,7], h:"sus2", c:"#00cc99"}
+    {n:"sus2", p:[0,2,7], h:"sus2", c:"#00cc99"},
+    {n:"m7b5", p:[0,3,6,10], h:"m7b5", c:"#aa00ff"},
+    {n:"9", p:[0,4,7,2], h:"9", c:"#ffcc00"},
+    {n:"m9", p:[0,3,7,2], h:"m9", c:"#00f2ff"}
 ];
 
 const piano = document.getElementById('p-keys');
-for(let i=0; i<36; i++){
+for(let i = 0; i < 36; i++){
     const k = document.createElement('div');
     k.className = `key ${[1,3,6,8,10].includes(i%12) ? 'b' : ''}`;
     k.dataset.note = i;
     piano.appendChild(k);
+}
+
+const translations = {
+    he: {
+        load: "טען MP3 / WAV / FLAC",
+        bpm: "BPM",
+        key: "מפתח",
+        resolution: "רזולוציה",
+        trans: "טרנספוזיציה",
+        ai: "AI זיהוי",
+        volume: "ווליום + RMS",
+        export: "ייצא Chord Sheet (TXT)",
+        ready: "טען שיר כדי להתחיל • AI מוכן"
+    },
+    en: {
+        load: "Load MP3 / WAV / FLAC",
+        bpm: "BPM",
+        key: "KEY",
+        resolution: "RESOLUTION",
+        trans: "TRANSPOSITION",
+        ai: "AI DETECTION",
+        volume: "VOLUME + RMS",
+        export: "Export Chord Sheet (TXT)",
+        ready: "Load a song to begin • AI READY"
+    }
+};
+
+function switchLang() {
+    currentLang = currentLang === 'he' ? 'en' : 'he';
+    document.querySelectorAll('.label').forEach((el, i) => {
+        const labels = ['BPM', 'מפתח', 'רזולוציה', 'טרנספוזיציה', 'AI זיהוי', 'ווליום + RMS'];
+        if (i < labels.length) el.textContent = currentLang === 'en' ? translations.en[Object.keys(translations.en)[i]] || labels[i] : labels[i];
+    });
+    document.getElementById('chord-sub').textContent = translations[currentLang].ready;
+    document.querySelector('button[onclick="exportSheet()"]').textContent = translations[currentLang].export;
 }
 
 document.getElementById('audio-in').onchange = async e => {
@@ -160,14 +289,15 @@ document.getElementById('audio-in').onchange = async e => {
     if(!file) return;
     player.pause();
     player.src = URL.createObjectURL(file);
-    document.getElementById('chord-sub').innerText = "מנתח...";
-    
+    document.getElementById('chord-sub').innerText = currentLang === 'he' ? "מנתח AI..." : "AI Analyzing...";
+   
     const buffer = await file.arrayBuffer();
     const audioBuffer = await new (window.AudioContext || window.webkitAudioContext)().decodeAudioData(buffer);
-    
+   
     drawStaticWaveform(audioBuffer);
     detectBPMImproved(audioBuffer);
-    document.getElementById('chord-sub').innerText = "מוכן – לחץ נגן";
+    smoothedChroma.fill(0.1);
+    document.getElementById('chord-sub').innerText = translations[currentLang].ready;
 };
 
 async function initAudio() {
@@ -176,7 +306,6 @@ async function initAudio() {
     analyser = aCtx.createAnalyser(); analyser.fftSize = 128;
     source = aCtx.createMediaElementSource(player);
     source.connect(masterGain).connect(analyser).connect(aCtx.destination);
-
     meyda = Meyda.createMeydaAnalyzer({
         audioContext: aCtx,
         source: source,
@@ -196,6 +325,14 @@ function togglePlay() {
 
 function skip(s) { player.currentTime += s; }
 
+function toggleAI() {
+    aiBoost = !aiBoost;
+    const btn = document.getElementById('ai-btn');
+    btn.innerText = aiBoost ? (currentLang === 'he' ? 'AI BOOST: ON 🔥' : 'AI BOOST: ON 🔥') : (currentLang === 'he' ? 'AI BOOST: OFF' : 'AI BOOST: OFF');
+    btn.style.background = aiBoost ? '#ff3e3e' : '#30363d';
+    btn.classList.toggle('ai-active', aiBoost);
+}
+
 let lastKey = "";
 function processAdvanced(features) {
     const beatsPerUpdate = parseFloat(document.getElementById('update-rate').value);
@@ -204,13 +341,22 @@ function processAdvanced(features) {
     lastUpdate = player.currentTime;
 
     const trans = parseInt(document.getElementById('trans-val').value) || 0;
-    let best = {score: 0.25, name: "--", hebrew: "", color: "#666"};
+    
+    // === AI TEMPORAL SMOOTHING (core of AI boost) ===
+    let chromaToUse = [...features.chroma];
+    if (aiBoost) {
+        for (let i = 0; i < 12; i++) {
+            smoothedChroma[i] = smoothedChroma[i] * 0.82 + features.chroma[i] * 0.18;
+        }
+        chromaToUse = smoothedChroma;
+    }
 
+    let best = {score: 0.22, name: "--", hebrew: "", color: "#666"};
     for(let r = 0; r < 12; r++) {
         chordTypes.forEach(t => {
-            let score = features.chroma[r] * 1.2;
+            let score = chromaToUse[r] * 1.25;
             t.p.forEach((interval, idx) => {
-                score += features.chroma[(r + interval) % 12] * (idx === 0 ? 1 : idx === 1 ? 0.85 : 0.65);
+                score += chromaToUse[(r + interval) % 12] * (idx === 0 ? 1.0 : idx === 1 ? 0.88 : 0.68);
             });
             if(score > best.score) {
                 best = {
@@ -222,37 +368,37 @@ function processAdvanced(features) {
             }
         });
     }
-
+    
     if(best.name !== "--") {
         updateChordUI(best);
-        estimateKey(features.chroma);
+        estimateKey(chromaToUse);
     }
 
     // Spectrum
     const bars = document.getElementById('spectrum');
     bars.innerHTML = '';
-    features.chroma.forEach(v => {
+    chromaToUse.forEach(v => {
         const b = document.createElement('div');
         b.className = 'bar';
-        b.style.height = (v * 100 + 10) + '%';
+        b.style.height = (v * 110 + 12) + '%';
         bars.appendChild(b);
     });
 
     // RMS meter
-    const rmsPercent = Math.min(100, features.rms * 280);
+    const rmsPercent = Math.min(100, features.rms * 320);
     document.getElementById('rms-meter').style.width = rmsPercent + '%';
 }
 
 function updateChordUI(best) {
     const main = document.getElementById('chord-main');
     if(main.innerText === best.name) return;
-
+    
     main.innerText = best.name;
     main.style.color = best.color;
     document.getElementById('chord-sub').innerText = best.hebrew + ` (${Math.round(best.score*100)}%)`;
-
+    
     main.classList.add('new');
-    setTimeout(() => main.classList.remove('new'), 300);
+    setTimeout(() => main.classList.remove('new'), 320);
 
     // History
     const tag = document.createElement('div');
@@ -260,18 +406,24 @@ function updateChordUI(best) {
     tag.style.borderColor = best.color;
     tag.innerText = best.name;
     document.getElementById('hist').prepend(tag);
-    if(document.getElementById('hist').children.length > 20) document.getElementById('hist').lastChild.remove();
+    if(document.getElementById('hist').children.length > 22) document.getElementById('hist').lastChild.remove();
 
-    // Piano
+    // Piano - improved root extraction + support for new chords
     document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
-    const root = best.name.replace(/[m7Majdim aug sus]/g,'');
+    const rootMatch = best.name.match(/^([A-G]#?)/);
+    const root = rootMatch ? rootMatch[1] : '';
     const rIdx = notes.indexOf(root);
-    let intervals = best.name.includes('m') ? [0,3,7] : [0,4,7];
+    
+    let intervals = [0,4,7];
+    if(best.name.includes('m') && !best.name.includes('Maj')) intervals = [0,3,7];
     if(best.name.includes('7')) intervals.push(best.name.includes('Maj7') ? 11 : 10);
     if(best.name.includes('dim')) intervals = [0,3,6];
     if(best.name.includes('aug')) intervals = [0,4,8];
     if(best.name.includes('sus4')) intervals = [0,5,7];
     if(best.name.includes('sus2')) intervals = [0,2,7];
+    if(best.name.includes('m7b5')) intervals = [0,3,6,10];
+    if(best.name.includes('9') && !best.name.includes('m')) intervals = [0,4,7,2];
+    if(best.name.includes('m9')) intervals = [0,3,7,2];
 
     intervals.forEach(i => {
         const noteIdx = (rIdx + i) % 12;
@@ -283,26 +435,24 @@ function updateChordUI(best) {
 function estimateKey(chroma) {
     let maxIdx = 0, maxVal = 0;
     chroma.forEach((v,i) => { if(v > maxVal){ maxVal = v; maxIdx = i; }});
-    
     const third = chroma[(maxIdx + 3) % 12];
     const fourth = chroma[(maxIdx + 4) % 12];
-    const mode = third > fourth * 0.9 ? "Minor" : "Major";
-    
-    const keyName = notesHeb[maxIdx] + (mode === "Major" ? " מז'ור" : " מינור");
+    const mode = third > fourth * 0.92 ? "Minor" : "Major";
+    const keyName = (currentLang === 'he' ? notesHeb[maxIdx] : notes[maxIdx]) + (mode === "Major" ? " מז'ור" : " מינור");
     document.getElementById('key-val').innerText = keyName;
 }
 
 function drawStaticWaveform(buffer) {
     const canvas = document.getElementById('waveform-canvas');
     waveformCtx = canvas.getContext('2d');
-    canvas.width = canvas.clientWidth;
-    canvas.height = canvas.clientHeight;
-
+    canvas.width = canvas.clientWidth * devicePixelRatio;
+    canvas.height = canvas.clientHeight * devicePixelRatio;
+    waveformCtx.scale(devicePixelRatio, devicePixelRatio);
+    
     const data = buffer.getChannelData(0);
     waveformData = [];
-    const step = Math.ceil(data.length / canvas.width);
-
-    for(let i = 0; i < canvas.width; i++) {
+    const step = Math.ceil(data.length / canvas.clientWidth);
+    for(let i = 0; i < canvas.clientWidth; i++) {
         let min = 1, max = -1;
         for(let j = 0; j < step; j++) {
             const val = data[i * step + j] || 0;
@@ -316,29 +466,30 @@ function drawStaticWaveform(buffer) {
 function redrawFullWaveform() {
     if(!waveformCtx || !waveformData.length) return;
     const canvas = document.getElementById('waveform-canvas');
-    waveformCtx.clearRect(0, 0, canvas.width, canvas.height);
-
+    waveformCtx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+    
     waveformCtx.strokeStyle = '#00f2ff';
-    waveformCtx.lineWidth = 1.5;
+    waveformCtx.lineWidth = 2.5;
+    waveformCtx.shadowBlur = 12;
+    waveformCtx.shadowColor = '#00f2ff';
     waveformCtx.beginPath();
-
     waveformData.forEach(p => {
-        const yMid = canvas.height / 2;
-        waveformCtx.moveTo(p.x, yMid + p.min * yMid * 0.95);
-        waveformCtx.lineTo(p.x, yMid + p.max * yMid * 0.95);
+        const yMid = canvas.clientHeight / 2;
+        waveformCtx.moveTo(p.x, yMid + p.min * yMid * 0.92);
+        waveformCtx.lineTo(p.x, yMid + p.max * yMid * 0.92);
     });
     waveformCtx.stroke();
+    waveformCtx.shadowBlur = 0;
 
-    // Playhead
     if(player.duration) {
-        const x = (player.currentTime / player.duration) * canvas.width;
+        const x = (player.currentTime / player.duration) * canvas.clientWidth;
         waveformCtx.strokeStyle = '#ff3e3e';
-        waveformCtx.lineWidth = 3;
-        waveformCtx.shadowBlur = 25;
+        waveformCtx.lineWidth = 4;
+        waveformCtx.shadowBlur = 30;
         waveformCtx.shadowColor = '#ff3e3e';
         waveformCtx.beginPath();
         waveformCtx.moveTo(x, 0);
-        waveformCtx.lineTo(x, canvas.height);
+        waveformCtx.lineTo(x, canvas.clientHeight);
         waveformCtx.stroke();
         waveformCtx.shadowBlur = 0;
     }
@@ -346,19 +497,40 @@ function redrawFullWaveform() {
 
 function detectBPMImproved(buffer) {
     const data = buffer.getChannelData(0);
+    const sampleRate = buffer.sampleRate;
     const peaks = [];
-    let threshold = 0.75;
-    for(let i = 0; i < data.length; i += 1024) {
-        if(Math.abs(data[i]) > threshold) peaks.push(i / buffer.sampleRate);
-    }
-    if(peaks.length < 6) { currentBPM = 120; return; }
+    let threshold = 0.58;
+    let lastPeakTime = 0;
 
-    const diffs = [];
-    for(let i = 1; i < peaks.length; i++) diffs.push(peaks[i] - peaks[i-1]);
-    diffs.sort((a,b)=>a-b);
-    const median = diffs[Math.floor(diffs.length/2)];
-    currentBPM = Math.round(60 / median);
-    if(currentBPM < 50 || currentBPM > 220) currentBPM = 120;
+    for(let i = 0; i < data.length; i += 256) {
+        let sum = 0;
+        for(let j = 0; j < 256; j++) sum += data[i + j] * data[i + j];
+        const rms = Math.sqrt(sum / 256);
+        
+        const time = i / sampleRate;
+        if(rms > threshold && time - lastPeakTime > 0.18) {
+            peaks.push(time);
+            lastPeakTime = time;
+            threshold = rms * 0.75; // adaptive
+        }
+    }
+
+    if(peaks.length < 5) {
+        currentBPM = 120;
+    } else {
+        const diffs = [];
+        for(let i = 1; i < peaks.length; i++) diffs.push(peaks[i] - peaks[i-1]);
+        diffs.sort((a,b) => a - b);
+        let median = diffs[Math.floor(diffs.length / 2)];
+        
+        let bpm = Math.round(60 / median);
+        // tempo correction
+        if(bpm < 65) bpm *= 2;
+        if(bpm > 185) bpm = Math.round(bpm / 2);
+        if(bpm < 55 || bpm > 230) bpm = 120;
+        
+        currentBPM = bpm;
+    }
     document.getElementById('bpm-val').innerText = currentBPM;
 }
 
@@ -375,18 +547,46 @@ function tapTempo() {
     }
 }
 
+function exportSheet() {
+    let text = "MAESTRO ULTRA AI - Chord Progression\n";
+    text += "====================================\n\n";
+    const tags = document.querySelectorAll('#hist .tag');
+    tags.forEach((t, i) => {
+        text += `${i+1}. ${t.innerText}\n`;
+    });
+    text += `\nBPM: ${currentBPM} | Generated with AI detection\n`;
+    
+    const blob = new Blob([text], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Maestro_Chords_' + new Date().toISOString().slice(0,10) + '.txt';
+    a.click();
+}
+
 function loop() {
     const fmt = s => new Date(s*1000).toISOString().substr(14,5);
     document.getElementById('clock').innerText = fmt(player.currentTime || 0);
-
+    
     if(masterGain) masterGain.gain.value = document.getElementById('vol').value / 100;
-
+    
+    // Progress bar
+    const progBar = document.getElementById('progress-bar');
+    if(player.duration) {
+        progBar.style.width = `${(player.currentTime / player.duration) * 100}%`;
+    }
+    
     redrawFullWaveform();
-
     requestAnimationFrame(loop);
 }
 
-// Waveform click seek
+function seekProgress(e) {
+    if(!player.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    player.currentTime = ((e.clientX - rect.left) / rect.width) * player.duration;
+}
+
+// Waveform click
 document.getElementById('waveform-container').onclick = e => {
     if(!player.duration) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -395,6 +595,15 @@ document.getElementById('waveform-container').onclick = e => {
 
 player.onplay = () => document.getElementById('play-btn').innerText = "❚❚ השהה";
 player.onpause = () => document.getElementById('play-btn').innerText = "▶ נגן";
+
+// Keyboard shortcuts (international pro feature)
+document.addEventListener('keydown', e => {
+    if(e.key === " ") { e.preventDefault(); togglePlay(); }
+    if(e.key === "ArrowRight") skip(10);
+    if(e.key === "ArrowLeft") skip(-10);
+    if(e.key === "t" || e.key === "T") tapTempo();
+});
+
 </script>
 </body>
 </html>
